@@ -1,0 +1,587 @@
+// ============================================================================
+//  Healthcare Appointment & Follow-up Manager — Prisma Schema
+//  Datastore: PostgreSQL 14+
+//
+//  NOTE ON pg-boss:
+//  pg-boss creates and owns its own `pgboss` schema. This datasource is scoped
+//  to `public` only (via ?schema=public in DATABASE_URL), so Prisma Migrate
+//  never sees the pgboss schema and will not report drift or try to drop it.
+//  Caveat: `prisma migrate reset` drops the whole database including pgboss —
+//  that is fine, pg-boss recreates its schema on next worker boot.
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // e.g. postgresql://...:5432/clinic?schema=public
+}
+
+// ============================================================================
+//  ENUMS
+// ============================================================================
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  HELD //  temporary reservation, blocks the slot until hold_expires_at
+  CONFIRMED //  patient completed the symptom form and confirmed
+  COMPLETED //  doctor submitted visit notes
+  CANCELLED_BY_PATIENT
+  CANCELLED_BY_DOCTOR
+  CANCELLED_BY_CLINIC //  doctor leave applied over an existing booking
+  RESCHEDULED //  superseded by a newer appointment row
+  EXPIRED //  hold lapsed without confirmation
+  NO_SHOW
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum LeaveScope {
+  FULL_DAY
+  PARTIAL
+}
+
+enum SummaryType {
+  PRE_VISIT
+  POST_VISIT
+}
+
+enum SummaryStatus {
+  PENDING
+  READY
+  FAILED
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FrequencyCode {
+  OD //  once daily
+  BD //  twice daily
+  TDS //  three times daily
+  QID //  four times daily
+  HS //  at bedtime
+  SOS //  as needed — generates no scheduled reminders
+}
+
+enum PrescriptionStatus {
+  ACTIVE
+  SUPERSEDED
+  CANCELLED
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  SKIPPED
+  CANCELLED
+}
+
+enum NotificationType {
+  BOOKING_CONFIRMATION
+  APPOINTMENT_REMINDER_24H
+  APPOINTMENT_REMINDER_1H
+  CANCELLATION
+  RESCHEDULE
+  LEAVE_CANCELLATION
+  POST_VISIT_SUMMARY_READY
+  MEDICATION_REMINDER
+  PASSWORD_RESET
+}
+
+enum NotificationChannel {
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED //  terminal — exhausted retries, surfaced to admin
+}
+
+enum CalendarSyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+  DELETED
+}
+
+enum CalendarOperation {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+// ============================================================================
+//  IDENTITY
+// ============================================================================
+
+model User {
+  id           String  @id @default(uuid()) @db.Uuid
+  email        String  @unique // always stored lowercased by the app layer
+  passwordHash String  @map("password_hash")
+  role         Role
+  fullName     String  @map("full_name")
+  phone        String?
+
+  // IANA identifier, e.g. "Asia/Kolkata". Drives working-hour interpretation
+  // for doctors and medication-reminder clock times for patients.
+  timezone  String    @default("Asia/Kolkata")
+  isActive  Boolean   @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  patientProfile      PatientProfile?
+  doctorProfile       DoctorProfile?
+  refreshTokens       RefreshToken[]
+  calendarConnection  CalendarConnection?
+  calendarEvents      CalendarEvent[]
+  auditLogs           AuditLog[]
+  leavesCreated       DoctorLeave[]        @relation("LeaveCreatedBy")
+  appointmentsVoided  Appointment[]        @relation("AppointmentCancelledBy")
+  notifications       NotificationOutbox[]
+
+  @@index([role, isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") // sha256, never the raw token
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@map("refresh_tokens")
+}
+
+model PatientProfile {
+  // PK is the user id — a patient IS a user, so appointment.patient_id doubles
+  // as a user id and no extra hop is needed for email/timezone lookups.
+  userId String @id @map("user_id") @db.Uuid
+
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  gender           Gender?
+  bloodGroup       String?   @map("blood_group")
+  emergencyContact String?   @map("emergency_contact")
+  medicationRemindersEnabled Boolean @default(true) @map("medication_reminders_enabled")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+  prescriptions Prescription[]
+  reminders     MedicationReminder[]
+
+  @@map("patient_profiles")
+}
+
+model DoctorProfile {
+  userId String @id @map("user_id") @db.Uuid
+
+  specialisation     String
+  qualification      String?
+  licenseNumber      String? @unique @map("license_number")
+  bio                String?
+  consultationFee    Decimal @default(0) @map("consultation_fee") @db.Decimal(10, 2)
+
+  // Grid step in minutes. Also the default appointment duration.
+  slotDurationMin    Int     @default(30) @map("slot_duration_min")
+
+  // How far ahead patients may book, and the minimum lead time before a slot.
+  bookingHorizonDays Int     @default(30) @map("booking_horizon_days")
+  minLeadTimeMin     Int     @default(60) @map("min_lead_time_min")
+
+  isAcceptingPatients Boolean @default(true) @map("is_accepting_patients")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workingHours DoctorWorkingHours[]
+  leaves       DoctorLeave[]
+  appointments Appointment[]
+
+  @@index([specialisation, isAcceptingPatients])
+  @@map("doctor_profiles")
+}
+
+model DoctorWorkingHours {
+  id       String @id @default(uuid()) @db.Uuid
+  doctorId String @map("doctor_id") @db.Uuid
+
+  dayOfWeek Int @map("day_of_week") // 0 = Sunday .. 6 = Saturday
+
+  // Minutes from local midnight (0–1440) in the doctor's timezone.
+  // Stored as integers rather than TIME so JS can do plain arithmetic when
+  // building the slot grid — no Date objects anchored to 1970.
+  // Split shifts are two rows: e.g. 540–780 and 900–1080.
+  startMinute Int @map("start_minute")
+  endMinute   Int @map("end_minute")
+
+  doctor DoctorProfile @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+
+  @@unique([doctorId, dayOfWeek, startMinute])
+  @@index([doctorId, dayOfWeek])
+  @@map("doctor_working_hours")
+}
+
+model DoctorLeave {
+  id       String @id @default(uuid()) @db.Uuid
+  doctorId String @map("doctor_id") @db.Uuid
+
+  // Absolute UTC bounds. For a full-day leave the app expands the local
+  // calendar day into UTC instants at write time, so overlap checks are a
+  // single range comparison regardless of scope or DST.
+  startsAt DateTime   @map("starts_at") @db.Timestamptz(3)
+  endsAt   DateTime   @map("ends_at") @db.Timestamptz(3)
+  scope    LeaveScope @default(FULL_DAY)
+  reason   String?
+
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [userId], onDelete: Cascade)
+  createdBy User          @relation("LeaveCreatedBy", fields: [createdById], references: [id])
+
+  @@index([doctorId, startsAt, endsAt])
+  @@map("doctor_leaves")
+}
+
+// ============================================================================
+//  SCHEDULING
+// ============================================================================
+
+model Appointment {
+  id        String @id @default(uuid()) @db.Uuid
+  doctorId  String @map("doctor_id") @db.Uuid
+  patientId String @map("patient_id") @db.Uuid
+
+  startsAt DateTime @map("starts_at") @db.Timestamptz(3)
+  endsAt   DateTime @map("ends_at") @db.Timestamptz(3)
+
+  status AppointmentStatus @default(HELD)
+
+  // --- Hold mechanism -------------------------------------------------------
+  // A HELD row physically blocks the slot via the exclusion constraint in
+  // migration.sql. The constraint CANNOT filter on NOW() (not immutable), so
+  // an expired hold still blocks until cleared. The booking service therefore
+  // catches 23P01, inspects the blocker, expires it if lapsed, and retries
+  // once. A pg-boss sweeper clears stale holds in the background as well.
+  holdExpiresAt DateTime? @map("hold_expires_at") @db.Timestamptz(3)
+  holdToken     String?   @unique @map("hold_token")
+
+  // --- Reschedule chain -----------------------------------------------------
+  rescheduledFromId String? @unique @map("rescheduled_from_id") @db.Uuid
+
+  // --- Cancellation ---------------------------------------------------------
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(3)
+  cancelledById      String?   @map("cancelled_by_id") @db.Uuid
+  cancellationReason String?   @map("cancellation_reason")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  doctor  DoctorProfile  @relation(fields: [doctorId], references: [userId])
+  patient PatientProfile @relation(fields: [patientId], references: [userId])
+
+  cancelledBy     User?        @relation("AppointmentCancelledBy", fields: [cancelledById], references: [id])
+  rescheduledFrom Appointment? @relation("RescheduleChain", fields: [rescheduledFromId], references: [id])
+  rescheduledTo   Appointment? @relation("RescheduleChain")
+
+  symptomForm    SymptomForm?
+  visitNote      VisitNote?
+  prescription   Prescription?
+  aiSummaries    AiSummary[]
+  calendarEvents CalendarEvent[]
+  notifications  NotificationOutbox[]
+
+  @@index([doctorId, startsAt])
+  @@index([patientId, startsAt])
+  @@index([status, holdExpiresAt]) //  hold sweeper
+  @@index([status, startsAt]) //  reminder scan
+  @@map("appointments")
+}
+
+model SymptomForm {
+  id            String @id @default(uuid()) @db.Uuid
+  appointmentId String @unique @map("appointment_id") @db.Uuid
+
+  symptoms           String
+  durationText       String? @map("duration_text") // "3 days", "since Monday"
+  severity           Int? //  patient-reported 1–10
+  existingConditions String? @map("existing_conditions")
+  currentMedications String? @map("current_medications")
+  allergies          String?
+  additionalNotes    String? @map("additional_notes")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("symptom_forms")
+}
+
+// ============================================================================
+//  CLINICAL
+// ============================================================================
+
+model VisitNote {
+  id            String @id @default(uuid()) @db.Uuid
+  appointmentId String @unique @map("appointment_id") @db.Uuid
+
+  clinicalNotes String    @map("clinical_notes")
+  diagnosis     String?
+  followUpDate  DateTime? @map("follow_up_date") @db.Date
+  followUpNotes String?   @map("follow_up_notes")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("visit_notes")
+}
+
+model Prescription {
+  id            String @id @default(uuid()) @db.Uuid
+  appointmentId String @unique @map("appointment_id") @db.Uuid
+  patientId     String @map("patient_id") @db.Uuid //  denormalised for "my prescriptions"
+
+  status    PrescriptionStatus @default(ACTIVE)
+  startDate DateTime           @map("start_date") @db.Date
+  notes     String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  appointment Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient     PatientProfile     @relation(fields: [patientId], references: [userId])
+  items       PrescriptionItem[]
+
+  @@index([patientId, status])
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id             String @id @default(uuid()) @db.Uuid
+  prescriptionId String @map("prescription_id") @db.Uuid
+
+  drugName     String        @map("drug_name")
+  dose         String //  "500 mg", "1 tablet"
+  frequency    FrequencyCode
+  durationDays Int           @map("duration_days")
+  instructions String? //  "after food", "with warm water"
+
+  // Local clock times as minutes from midnight, resolved from the frequency
+  // map at save time. Persisted (not derived) so a later change to the default
+  // map never silently shifts an already-issued course. Doctor may override.
+  timesOfDayMinutes Int[] @map("times_of_day_minutes")
+
+  prescription Prescription         @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  reminders    MedicationReminder[]
+
+  @@index([prescriptionId])
+  @@map("prescription_items")
+}
+
+model MedicationReminder {
+  id                 String @id @default(uuid()) @db.Uuid
+  prescriptionItemId String @map("prescription_item_id") @db.Uuid
+  patientId          String @map("patient_id") @db.Uuid
+
+  // Materialised at prescription-save time: items × times/day × duration.
+  scheduledAt DateTime       @map("scheduled_at") @db.Timestamptz(3)
+  status      ReminderStatus @default(PENDING)
+  sentAt      DateTime?      @map("sent_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  prescriptionItem PrescriptionItem @relation(fields: [prescriptionItemId], references: [id], onDelete: Cascade)
+  patient          PatientProfile   @relation(fields: [patientId], references: [userId])
+
+  // Makes regeneration idempotent — re-running the materialiser cannot
+  // duplicate a dose.
+  @@unique([prescriptionItemId, scheduledAt])
+  @@index([status, scheduledAt]) //  due-reminder scan
+  @@map("medication_reminders")
+}
+
+// ============================================================================
+//  AI
+// ============================================================================
+
+model AiSummary {
+  id            String @id @default(uuid()) @db.Uuid
+  appointmentId String @map("appointment_id") @db.Uuid
+
+  type   SummaryType
+  status SummaryStatus @default(PENDING)
+
+  // Shape differs by type, so it is jsonb rather than columns:
+  //   PRE_VISIT  { urgency, chiefComplaint, suggestedQuestions[] }
+  //   POST_VISIT { summary, medicationSchedule[], followUpSteps[] }
+  // Validated against a Zod schema before write.
+  payload Json? @db.JsonB
+
+  // Promoted out of payload so the doctor list can sort/filter by urgency
+  // without a jsonb index.
+  urgency UrgencyLevel?
+
+  model         String? //  e.g. "gpt-4o-mini"
+  promptVersion String? @map("prompt_version") //  e.g. "previsit.v2"
+  attempts      Int     @default(0)
+  lastError     String? @map("last_error")
+
+  generatedAt DateTime? @map("generated_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, type])
+  @@index([status, attempts]) //  retry sweeper
+  @@map("ai_summaries")
+}
+
+// ============================================================================
+//  NOTIFICATIONS  (transactional outbox)
+// ============================================================================
+
+model NotificationOutbox {
+  id String @id @default(uuid()) @db.Uuid
+
+  type    NotificationType
+  channel NotificationChannel @default(EMAIL)
+
+  recipientUserId String? @map("recipient_user_id") @db.Uuid
+  recipientEmail  String  @map("recipient_email") //  snapshot; survives email change
+  appointmentId   String? @map("appointment_id") @db.Uuid
+
+  subject  String
+  template String //  handlebars/react-email template key
+  payload  Json   @db.JsonB //  template variables — NO clinical detail
+
+  // Deterministic, e.g. "booking_confirmation:<appointmentId>:<userId>".
+  // Unique index makes double-send impossible across retries and restarts.
+  idempotencyKey String @unique @map("idempotency_key")
+
+  status        NotificationStatus @default(PENDING)
+  attempts      Int                @default(0)
+  maxAttempts   Int                @default(5) @map("max_attempts")
+  nextAttemptAt DateTime           @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+  lastError     String?            @map("last_error")
+
+  sentAt            DateTime? @map("sent_at") @db.Timestamptz(3)
+  providerMessageId String?   @map("provider_message_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  recipient   User?        @relation(fields: [recipientUserId], references: [id], onDelete: SetNull)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt]) //  worker claim query
+  @@index([appointmentId])
+  @@map("notification_outbox")
+}
+
+// ============================================================================
+//  GOOGLE CALENDAR
+// ============================================================================
+
+model CalendarConnection {
+  userId String @id @map("user_id") @db.Uuid
+
+  provider String @default("google")
+
+  // AES-256-GCM, stored as "iv:authTag:ciphertext" (all base64).
+  // Key comes from CALENDAR_TOKEN_KEY in env — never committed, never in JWT.
+  encryptedRefreshToken String @map("encrypted_refresh_token")
+
+  calendarId  String  @default("primary") @map("calendar_id")
+  grantedScopes String @map("granted_scopes")
+  googleEmail String? @map("google_email")
+
+  connectedAt DateTime  @default(now()) @map("connected_at") @db.Timestamptz(3)
+  // Set when Google returns invalid_grant (user revoked). Terminal — the UI
+  // prompts a reconnect instead of the worker retrying forever.
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(3)
+  lastError   String?   @map("last_error")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_connections")
+}
+
+model CalendarEvent {
+  id            String @id @default(uuid()) @db.Uuid
+  appointmentId String @map("appointment_id") @db.Uuid
+  userId        String @map("user_id") @db.Uuid
+
+  // One row per participant per appointment: zero, one, or two rows depending
+  // on who has connected. The patient's sync failing never blocks the doctor's.
+  providerEventId String? @map("provider_event_id")
+  calendarId      String  @default("primary") @map("calendar_id")
+
+  syncStatus    CalendarSyncStatus @default(PENDING) @map("sync_status")
+  lastOperation CalendarOperation? @map("last_operation")
+  attempts      Int                @default(0)
+  lastError     String?            @map("last_error")
+  lastSyncedAt  DateTime?          @map("last_synced_at") @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([appointmentId, userId])
+  @@index([syncStatus, attempts])
+  @@map("calendar_events")
+}
+
+// ============================================================================
+//  AUDIT
+// ============================================================================
+
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  action      String //  "APPOINTMENT_BOOKED", "LEAVE_APPLIED", "NOTES_SUBMITTED"
+  entityType  String  @map("entity_type")
+  entityId    String? @map("entity_id")
+  metadata    Json?   @db.JsonB
+  ipAddress   String? @map("ip_address")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@map("audit_logs")
+}

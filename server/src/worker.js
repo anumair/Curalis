@@ -1,0 +1,19 @@
+import { env } from './config/env.js';
+import { logger } from './lib/logger.js';
+import { boss } from './lib/boss.js';
+import './lib/prisma.js';
+
+// Jobs are registered here as each one is built, per the brief's build order:
+// hold.sweeper, notification.dispatch, ai.previsit, ai.postvisit, ai.retry,
+// calendar.sync, calendar.retry, appt.reminder, medication.dispatch.
+// worker.js imports the same service layer as the API — never duplicate logic.
+
+async function start() {
+  await boss.start();
+  logger.info(`Worker started (${env.NODE_ENV})`);
+}
+
+start().catch((err) => {
+  logger.error({ err }, 'Worker failed to start');
+  process.exit(1);
+});
