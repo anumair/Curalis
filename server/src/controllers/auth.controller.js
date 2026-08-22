@@ -1,6 +1,6 @@
-import * as authService from './auth.service.js';
-import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../../lib/cookies.js';
-import { ApiError } from '../../utils/errors.js';
+import * as authService from '../services/auth.service.js';
+import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../lib/cookies.js';
+import { ApiError } from '../utils/errors.js';
 
 function requestMeta(req) {
   return { userAgent: req.get('user-agent') ?? undefined, ipAddress: req.ip };
