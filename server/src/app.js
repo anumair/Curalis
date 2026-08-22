@@ -6,7 +6,7 @@ import pinoHttp from 'pino-http';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
-import authRoutes from './routes/auth.routes.js';
+import authRoutes from './modules/auth/auth.routes.js';
 
 export const app = express();
 

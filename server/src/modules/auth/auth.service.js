@@ -1,12 +1,12 @@
-import { prisma } from '../lib/prisma.js';
+import { prisma } from '../../lib/prisma.js';
 import {
   signAccessToken,
   signRefreshToken,
   verifyRefreshToken,
   hashRefreshToken,
-} from '../lib/jwt.js';
-import { hashPassword, comparePassword } from '../utils/password.js';
-import { ApiError } from '../utils/errors.js';
+} from '../../lib/jwt.js';
+import { hashPassword, comparePassword } from '../../utils/password.js';
+import { ApiError } from '../../utils/errors.js';
 
 export async function registerPatient({ email, password, fullName, phone, timezone }) {
   const normalisedEmail = email.toLowerCase();
