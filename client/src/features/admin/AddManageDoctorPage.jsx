@@ -243,7 +243,7 @@ export function AddManageDoctorPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 'var(--space-8)', alignItems: 'start' }}>
-        <div style={{ display: 'grid', gap: 'var(--space-8)', minWidth: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 'var(--space-8)', minWidth: 0 }}>
           <section>
             <h3 style={{ marginBottom: 'var(--space-4)' }}>Account details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 'var(--space-3)' }}>

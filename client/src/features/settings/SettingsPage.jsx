@@ -141,7 +141,7 @@ export function SettingsPage() {
       <h1 style={{ fontSize: 'clamp(34px,4.4vw,52px)', marginBottom: 'var(--space-8)' }}>Account settings</h1>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: 'var(--space-8)', alignItems: 'start' }}>
-        <div style={{ display: 'grid', gap: 'var(--space-8)', minWidth: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 'var(--space-8)', minWidth: 0 }}>
           <section>
             <h3 style={{ marginBottom: 'var(--space-4)' }}>Your details</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 'var(--space-3)', maxWidth: 700 }}>
