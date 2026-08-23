@@ -6,6 +6,10 @@ build/
 *.log
 .DS_Store
 
+# Spec docs (locked brief, schema companion, migration SQL) — kept local,
+# not in version control.
+docs/
+
 # Prisma
 server/prisma/dev.db
 
