@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="organic.css">
+<style>
+  html, body { background: var(--color-bg); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--color-neutral-300); border-radius: 999px; }
+  a:hover { color: var(--color-accent-700); }
+  @keyframes curalisIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .pg { animation: curalisIn .38s cubic-bezier(.2,.7,.3,1) both; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+
+<sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+<header style="position:sticky;top:0;z-index:30;background:color-mix(in srgb, var(--color-bg) 88%, transparent);backdrop-filter:blur(12px)">
+  <div class="nav" style="max-width:1180px;margin:0 auto;padding:14px clamp(16px,4vw,28px);gap:var(--space-4);flex-wrap:wrap">
+    <a class="nav-brand" href="#" onClick="{{ nav.home }}" style="text-decoration:none;color:var(--color-text);display:flex;align-items:center;gap:9px">
+      <span style="width:15px;height:15px;border-radius:999px;background:var(--color-accent);display:inline-block"></span>
+      Curalis
+    </a>
+    <nav style="display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap">
+      <sc-for list="{{ navLinks }}" as="l" hint-placeholder-count="4">
+        <a href="#" onClick="{{ l.go }}" aria-current="{{ l.cur }}" style="font-size:14px;text-decoration:none;padding:4px 0;border-bottom:1px solid transparent">{{ l.label }}</a>
+      </sc-for>
+    </nav>
+    <span style="display:flex;align-items:center;gap:10px;padding-left:var(--space-4)">
+      <span style="width:30px;height:30px;border-radius:999px;background:var(--color-accent-2-200);color:var(--color-accent-2-800);display:grid;place-items:center;font-size:12px;font-weight:700">{{ userInitials }}</span>
+      <a href="#" onClick="{{ nav.landing }}" style="font-size:13px;color:color-mix(in srgb, var(--color-text) 55%, transparent);text-decoration:none">Sign out</a>
+    </span>
+  </div>
+</header>
+</sc-if>
+
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;left:50%;transform:translateX(-50%);top:18px;z-index:80;background:var(--color-accent-2-800);color:var(--color-accent-2-100);padding:10px 20px;border-radius:999px;font-size:13px;box-shadow:var(--shadow-lg)">{{ toast }}</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 1 — LANDING ═══════════ -->
+<sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+<div class="pg">
+  <div style="max-width:1180px;margin:0 auto;padding:20px clamp(16px,4vw,28px) 0;display:flex;align-items:center;gap:16px">
+    <span class="nav-brand" style="display:flex;align-items:center;gap:9px;margin-right:auto;font-size:18px">
+      <span style="width:15px;height:15px;border-radius:999px;background:var(--color-accent);display:inline-block"></span>Curalis
+    </span>
+    <a class="btn btn-ghost" href="#" onClick="{{ goSignIn }}">Sign in</a>
+    <a class="btn btn-primary" href="#" onClick="{{ goSignUp }}">Create an account</a>
+  </div>
+
+  <section style="position:relative;max-width:1180px;margin:0 auto;padding:clamp(40px,7vw,96px) clamp(16px,4vw,28px) clamp(48px,6vw,80px);overflow:hidden">
+    <span style="position:absolute;right:-90px;top:10px;width:340px;height:340px;border-radius:999px;background:var(--color-accent-200);opacity:.55"></span>
+    <span style="position:absolute;right:150px;top:230px;width:170px;height:170px;border-radius:999px;background:var(--color-accent-2-200);opacity:.7"></span>
+    <div style="position:relative;max-width:780px">
+      <span class="tag tag-accent-2" style="margin-bottom:var(--space-4)">Clinic appointments, end to end</span>
+      <h1 style="font-size:clamp(40px,6.6vw,76px);line-height:1.02;margin:var(--space-3) 0 var(--space-4);max-width:14ch">Book with the right doctor, prepared.</h1>
+      <p style="font-size:clamp(16px,1.7vw,19px);line-height:1.6;max-width:60ch;text-wrap:pretty;opacity:.85">Curalis connects patients with clinic doctors and makes the visit itself work better. Share what you're experiencing when you book, so your doctor arrives prepared. Leave with a summary you can actually read, a medication schedule you won't forget, and everything already on your calendar.</p>
+      <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">
+        <a class="btn btn-primary" href="#" onClick="{{ goSignUp }}" style="font-size:16px;padding:12px 28px">Create an account</a>
+        <a class="btn btn-secondary" href="#" onClick="{{ goSignIn }}" style="font-size:16px;padding:12px 28px">Sign in</a>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,28px) clamp(48px,6vw,88px)">
+    <h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:var(--space-6)">How it works</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--space-4)">
+      <div class="card elev-sm" style="padding:var(--space-6)">
+        <span style="width:38px;height:38px;border-radius:999px;background:var(--color-accent);color:var(--color-bg);display:grid;place-items:center;font-family:var(--font-heading);font-size:17px">1</span>
+        <h4 style="margin:var(--space-2) 0 0">Find your doctor</h4>
+        <p class="card-body" style="font-size:14px">Search by specialisation and see real available times.</p>
+      </div>
+      <div class="card elev-sm" style="padding:var(--space-6)">
+        <span style="width:38px;height:38px;border-radius:999px;background:var(--color-accent);color:var(--color-bg);display:grid;place-items:center;font-family:var(--font-heading);font-size:17px">2</span>
+        <h4 style="margin:var(--space-2) 0 0">Tell us what's wrong</h4>
+        <p class="card-body" style="font-size:14px">Describe your symptoms while booking. It takes two minutes.</p>
+      </div>
+      <div class="card elev-sm" style="padding:var(--space-6)">
+        <span style="width:38px;height:38px;border-radius:999px;background:var(--color-accent);color:var(--color-bg);display:grid;place-items:center;font-family:var(--font-heading);font-size:17px">3</span>
+        <h4 style="margin:var(--space-2) 0 0">Your doctor is briefed</h4>
+        <p class="card-body" style="font-size:14px">Curalis prepares a summary of your symptoms before you arrive.</p>
+      </div>
+      <div class="card elev-sm" style="padding:var(--space-6)">
+        <span style="width:38px;height:38px;border-radius:999px;background:var(--color-accent);color:var(--color-bg);display:grid;place-items:center;font-family:var(--font-heading);font-size:17px">4</span>
+        <h4 style="margin:var(--space-2) 0 0">Take the visit home</h4>
+        <p class="card-body" style="font-size:14px">Get a plain-language summary, your medication schedule, and reminders.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,28px) clamp(48px,6vw,88px)">
+    <h2 style="font-size:clamp(28px,3.4vw,40px);margin-bottom:var(--space-6)">What you get</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6) var(--space-8)">
+      <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+        <h4 style="margin-bottom:6px">Real-time availability</h4>
+        <p style="font-size:14px;opacity:.8;margin:0;text-wrap:pretty">Slots update as they're booked. What you see is bookable.</p>
+      </div>
+      <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+        <h4 style="margin-bottom:6px">Symptom intake</h4>
+        <p style="font-size:14px;opacity:.8;margin:0;text-wrap:pretty">Your doctor reads your history before the consultation starts, not during it.</p>
+      </div>
+      <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+        <h4 style="margin-bottom:6px">Plain-language summaries</h4>
+        <p style="font-size:14px;opacity:.8;margin:0;text-wrap:pretty">Clinical notes rewritten so they make sense without a medical degree.</p>
+      </div>
+      <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+        <h4 style="margin-bottom:6px">Medication reminders</h4>
+        <p style="font-size:14px;opacity:.8;margin:0;text-wrap:pretty">Timed to your prescription, delivered to your inbox.</p>
+      </div>
+      <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+        <h4 style="margin-bottom:6px">Calendar sync</h4>
+        <p style="font-size:14px;opacity:.8;margin:0;text-wrap:pretty">Appointments land in your Google Calendar, and update themselves when plans change.</p>
+      </div>
+      <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+        <h4 style="margin-bottom:6px">Email at every step</h4>
+        <p style="font-size:14px;opacity:.8;margin:0;text-wrap:pretty">Confirmation, reminders, and immediate notice if anything changes.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,28px) clamp(48px,6vw,88px)">
+    <div style="background:var(--color-accent-2-200);border-radius:calc(var(--radius-lg) * 1.15);padding:clamp(28px,4vw,52px);max-width:760px">
+      <h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:var(--space-3)">Working at a clinic?</h2>
+      <p style="font-size:16px;margin:0;max-width:56ch;text-wrap:pretty;color:var(--color-accent-2-900)">Doctor accounts are created by your clinic administrator. If you're expecting access, check your email for your sign-in details, or contact your administrator.</p>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid var(--color-divider);margin-top:var(--space-8)">
+    <div style="max-width:1180px;margin:0 auto;padding:clamp(32px,4vw,56px) clamp(16px,4vw,28px);display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-6)">
+      <div>
+        <span class="nav-brand" style="display:flex;align-items:center;gap:9px;font-size:20px">
+          <span style="width:15px;height:15px;border-radius:999px;background:var(--color-accent);display:inline-block"></span>Curalis
+        </span>
+        <p style="font-size:14px;opacity:.75;margin-top:var(--space-2)">A clinic appointment and follow-up platform.</p>
+        <div style="display:flex;gap:var(--space-3)">
+          <a href="#" onClick="{{ goSignIn }}" style="font-size:14px">Sign in</a>
+          <a href="#" onClick="{{ goSignUp }}" style="font-size:14px">Create an account</a>
+        </div>
+      </div>
+      <div style="max-width:46ch">
+        <p style="font-size:13px;opacity:.7;text-wrap:pretty">Curalis supports communication between patients and their doctors. It does not provide medical advice, diagnosis, or emergency care.</p>
+        <p style="font-size:13px;font-weight:700;color:var(--color-accent-700);margin:0;text-wrap:pretty">If this is a medical emergency, call your local emergency number immediately.</p>
+      </div>
+    </div>
+  </footer>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 2 — AUTH ═══════════ -->
+<sc-if value="{{ isAuth }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));min-height:100vh">
+  <div style="background:var(--color-accent-2-700);color:var(--color-accent-2-100);padding:clamp(28px,4vw,56px);display:flex;flex-direction:column;position:relative;overflow:hidden">
+    <span style="position:absolute;left:-70px;bottom:-70px;width:280px;height:280px;border-radius:999px;background:var(--color-accent-2-600);opacity:.6"></span>
+    <a href="#" onClick="{{ nav.landing }}" class="nav-brand" style="position:relative;display:flex;align-items:center;gap:9px;color:inherit;text-decoration:none;font-size:20px">
+      <span style="width:15px;height:15px;border-radius:999px;background:var(--color-accent-400);display:inline-block"></span>Curalis
+    </a>
+    <div style="position:relative;margin-top:auto;max-width:34ch">
+      <p style="font-family:var(--font-heading);font-size:clamp(24px,2.6vw,34px);line-height:1.15;margin-bottom:var(--space-4)">Book with the right doctor, prepared.</p>
+      <p style="font-size:14px;opacity:.85;margin:0">Curalis supports communication between patients and their doctors. It does not provide medical advice, diagnosis, or emergency care.</p>
+    </div>
+  </div>
+
+  <div style="padding:clamp(28px,4vw,56px);display:flex;align-items:center">
+    <div style="width:100%;max-width:460px">
+      <sc-if value="{{ isSignIn }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h1 style="font-size:clamp(30px,3.6vw,42px)">Sign in to Curalis</h1>
+          <p style="opacity:.75;margin-bottom:var(--space-6)">Patients, doctors, and clinic administrators sign in here.</p>
+          <sc-if value="{{ authError }}" hint-placeholder-val="{{ false }}">
+            <p style="background:var(--color-accent-100);color:var(--color-accent-800);padding:10px 16px;border-radius:var(--radius-md);font-size:13px">{{ authError }}</p>
+          </sc-if>
+          <div class="field" style="margin-bottom:var(--space-3)">
+            <label>Email address</label>
+            <input class="input" type="email" value="{{ email }}" onChange="{{ onEmail }}" placeholder="you@example.com">
+          </div>
+          <div class="field" style="margin-bottom:var(--space-2)">
+            <label>Password</label>
+            <input class="input" type="{{ pwType }}" value="{{ password }}" onChange="{{ onPassword }}" placeholder="••••••••">
+          </div>
+          <label class="radio" style="margin-bottom:var(--space-6)">
+            <input type="checkbox" checked="{{ showPw }}" onChange="{{ toggleShowPw }}"><span class="dot"></span>Show password
+          </label>
+          <button class="btn btn-primary btn-block" style="padding:12px" onClick="{{ doSignIn }}">{{ signInLabel }}</button>
+          <p style="font-size:14px;margin-top:var(--space-4)">New patient? <a href="#" onClick="{{ goSignUp }}">Create an account</a></p>
+          <div style="margin-top:var(--space-6);border-top:1px solid var(--color-divider);padding-top:var(--space-4)">
+            <p style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.55;margin-bottom:var(--space-2)">Demo — sign in as</p>
+            <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+              <button class="btn btn-secondary" onClick="{{ asPatient }}">Patient</button>
+              <button class="btn btn-secondary" onClick="{{ asDoctor }}">Doctor</button>
+              <button class="btn btn-secondary" onClick="{{ asAdmin }}">Administrator</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSignUp }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <h1 style="font-size:clamp(28px,3.4vw,40px)">Create your Curalis account</h1>
+          <p style="opacity:.75;margin-bottom:var(--space-6)">Book appointments, track prescriptions, and keep everything in one place.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-3)">
+            <div class="field" style="grid-column:1/-1"><label>Full name</label><input class="input" placeholder="Maya Okonjo"></div>
+            <div class="field" style="grid-column:1/-1">
+              <label>Email address</label><input class="input" type="email" placeholder="you@example.com">
+              <p style="font-size:11px;opacity:.6;margin:5px 0 0">You'll sign in with this, and we'll send appointment updates here.</p>
+            </div>
+            <div class="field">
+              <label>Password</label><input class="input" type="password">
+              <p style="font-size:11px;opacity:.6;margin:5px 0 0">At least 8 characters, with one number.</p>
+            </div>
+            <div class="field"><label>Confirm password</label><input class="input" type="password"></div>
+            <div class="field">
+              <label>Phone number</label><input class="input" type="tel">
+              <p style="font-size:11px;opacity:.6;margin:5px 0 0">Optional. Used only if the clinic needs to reach you about an appointment.</p>
+            </div>
+            <div class="field"><label>Date of birth</label><input class="input" type="date"></div>
+            <div class="field"><label>Gender</label>
+              <select class="input"><option>Female</option><option>Male</option><option>Other</option><option>Prefer not to say</option></select>
+            </div>
+            <div class="field"><label>Blood group</label>
+              <select class="input"><option>A+</option><option>A−</option><option>B+</option><option>B−</option><option>AB+</option><option>AB−</option><option>O+</option><option>O−</option></select>
+            </div>
+            <div class="field" style="grid-column:1/-1">
+              <label>Time zone</label>
+              <select class="input"><option>Asia/Kolkata (IST)</option><option>Europe/London (BST)</option><option>America/New_York (EDT)</option></select>
+              <p style="font-size:11px;opacity:.6;margin:5px 0 0">Detected from your device. Change it if you're travelling or this looks wrong. We use this to schedule your medication reminders at sensible hours.</p>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" style="padding:12px;margin-top:var(--space-4)" onClick="{{ doSignUp }}">{{ signUpLabel }}</button>
+          <p style="font-size:14px;margin-top:var(--space-4)">Already have an account? <a href="#" onClick="{{ goSignIn }}">Sign in</a></p>
+          <p style="background:var(--color-accent-2-100);color:var(--color-accent-2-800);padding:12px 16px;border-radius:var(--radius-md);font-size:13px;margin-top:var(--space-4);text-wrap:pretty">Doctor and administrator accounts are created by the clinic. This form registers patients only.</p>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 3 — PATIENT DASHBOARD ═══════════ -->
+<sc-if value="{{ isDash }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:6px">Hello, Maya</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-8)">Here's where things stand.</p>
+
+  <div style="display:grid;grid-template-columns:{{ dashCols }};gap:var(--space-6);align-items:start">
+    <div>
+      <h6 style="opacity:.6;margin-bottom:var(--space-3)">Your next appointment</h6>
+      <div class="card elev-md" style="padding:clamp(20px,3vw,32px);background:var(--color-accent-2-700);color:var(--color-accent-2-100);gap:var(--space-3)">
+        <div style="display:flex;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <p style="font-family:var(--font-heading);font-size:clamp(22px,2.6vw,30px);line-height:1.15;margin:0">Dr. Anita Raghavan</p>
+            <p style="margin:4px 0 0;opacity:.8;font-size:14px">General Medicine</p>
+          </div>
+          <span class="tag" style="background:var(--color-accent-400);color:var(--color-accent-900)">In 3 days</span>
+        </div>
+        <p style="font-size:17px;margin:var(--space-2) 0 0">Tuesday, 8 September 2026</p>
+        <p style="font-size:15px;opacity:.85;margin:0">4:30 PM – 5:00 PM · Asia/Kolkata (IST)</p>
+        <div style="display:flex;gap:var(--space-4);flex-wrap:wrap;font-size:13px;opacity:.75;margin-top:var(--space-2)">
+          <span>Booking reference CUR-8F42K</span>
+          <span>Not synced — connect your calendar in Settings</span>
+        </div>
+        <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-top:var(--space-3)">
+          <button class="btn" style="background:var(--color-accent-2-100);color:var(--color-accent-2-900)" onClick="{{ openUpcoming }}">View details</button>
+          <button class="btn" style="border:1px solid color-mix(in srgb, #f0fae1 40%, transparent);color:var(--color-accent-2-100)" onClick="{{ openReschedule }}">Reschedule</button>
+          <button class="btn" style="border:1px solid color-mix(in srgb, #f0fae1 40%, transparent);color:var(--color-accent-2-100)" onClick="{{ openCancel }}">Cancel appointment</button>
+        </div>
+      </div>
+
+      <h6 style="opacity:.6;margin:var(--space-8) 0 var(--space-3)">Your appointments</h6>
+      <div class="seg" style="margin-bottom:var(--space-4);flex-wrap:wrap">
+        <sc-for list="{{ apptFilters }}" as="f" hint-placeholder-count="4">
+          <label class="seg-opt"><input type="radio" name="apptfilter" checked="{{ f.on }}" onChange="{{ f.pick }}">{{ f.label }}</label>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ hasUpcoming }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.5;margin-bottom:var(--space-2)">Upcoming</p>
+      </sc-if>
+      <sc-for list="{{ upcomingList }}" as="a" hint-placeholder-count="1">
+        <div class="card" style="flex-direction:row;align-items:center;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-2);padding:var(--space-4) var(--space-6)">
+          <div style="flex:1;min-width:180px">
+            <p style="font-family:var(--font-heading);font-size:17px;margin:0">{{ a.doctor }}</p>
+            <p style="font-size:13px;opacity:.7;margin:2px 0 0">{{ a.spec }}</p>
+          </div>
+          <div style="min-width:170px">
+            <p style="font-size:14px;margin:0">{{ a.date }}</p>
+            <p style="font-size:13px;opacity:.7;margin:2px 0 0">{{ a.time }}</p>
+          </div>
+          <span class="tag tag-accent-2">{{ a.status }}</span>
+          <button class="btn btn-ghost" onClick="{{ a.open }}">View details</button>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ hasPast }}" hint-placeholder-val="{{ true }}">
+        <p style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.5;margin:var(--space-6) 0 var(--space-2)">Past</p>
+      </sc-if>
+      <sc-for list="{{ pastList }}" as="a" hint-placeholder-count="3">
+        <div class="card" style="flex-direction:row;align-items:center;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-2);padding:var(--space-4) var(--space-6);background:transparent;border:1px solid var(--color-divider)">
+          <div style="flex:1;min-width:180px">
+            <p style="font-family:var(--font-heading);font-size:17px;margin:0">{{ a.doctor }}</p>
+            <p style="font-size:13px;opacity:.7;margin:2px 0 0">{{ a.spec }}</p>
+          </div>
+          <div style="min-width:170px">
+            <p style="font-size:14px;margin:0">{{ a.date }}</p>
+            <p style="font-size:13px;opacity:.7;margin:2px 0 0">{{ a.note }}</p>
+          </div>
+          <span class="tag tag-neutral">{{ a.status }}</span>
+          <button class="btn btn-ghost" onClick="{{ a.open }}">{{ a.action }}</button>
+        </div>
+      </sc-for>
+      <sc-if value="{{ noPast }}" hint-placeholder-val="{{ false }}">
+        <p style="opacity:.6;font-size:14px">Your completed visits will appear here.</p>
+      </sc-if>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-6)">
+      <div>
+        <h6 style="opacity:.6;margin-bottom:var(--space-3)">Today's medication</h6>
+        <div class="card" style="padding:var(--space-6);gap:var(--space-3)">
+          <sc-for list="{{ todayDoses }}" as="d" hint-placeholder-count="3">
+            <div style="display:flex;gap:var(--space-3);align-items:baseline;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">
+              <span style="font-family:var(--font-heading);font-size:15px;min-width:72px">{{ d.time }}</span>
+              <span style="flex:1">
+                <span style="display:block;font-size:14px">{{ d.name }} · {{ d.dose }}</span>
+                <span style="display:block;font-size:12px;opacity:.65">{{ d.instr }} · {{ d.status }}</span>
+              </span>
+            </div>
+          </sc-for>
+          <p style="font-size:13px;color:var(--color-accent-700);margin:0">Your Amoxicillin course finishes tomorrow.</p>
+          <button class="btn btn-secondary" onClick="{{ nav.rx }}">View all prescriptions</button>
+        </div>
+      </div>
+
+      <div>
+        <h6 style="opacity:.6;margin-bottom:var(--space-3)">Quick actions</h6>
+        <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+          <button class="btn btn-secondary btn-block" style="margin:0;justify-content:flex-start;padding:12px 20px" onClick="{{ nav.doctors }}">Find a doctor</button>
+          <button class="btn btn-secondary btn-block" style="margin:0;justify-content:flex-start;padding:12px 20px" onClick="{{ nav.rx }}">View prescriptions</button>
+          <button class="btn btn-secondary btn-block" style="margin:0;justify-content:flex-start;padding:12px 20px" onClick="{{ nav.settings }}">Account settings</button>
+        </div>
+      </div>
+
+      <div style="background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6)">
+        <p style="font-size:13px;color:var(--color-accent-800);margin:0 0 var(--space-3);text-wrap:pretty">Connect your Google Calendar in Settings and your appointments will sync automatically — including changes and cancellations.</p>
+        <button class="btn btn-primary" onClick="{{ nav.settings }}">Open Settings</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 4 — FIND A DOCTOR ═══════════ -->
+<sc-if value="{{ isDoctors }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:6px">Find a doctor</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-6)">Search by specialisation or by name.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-3);align-items:end;margin-bottom:var(--space-4)">
+    <div class="field" style="grid-column:span 2;min-width:200px"><label>Search</label>
+      <input class="input" placeholder="Doctor name or specialisation" value="{{ docQuery }}" onChange="{{ onDocQuery }}">
+    </div>
+    <div class="field"><label>Specialisation</label>
+      <select class="input" value="{{ docSpec }}" onChange="{{ onDocSpec }}">
+        <sc-for list="{{ specOptions }}" as="o" hint-placeholder-count="5"><option>{{ o }}</option></sc-for>
+      </select>
+    </div>
+    <div class="field"><label>Availability</label>
+      <select class="input" value="{{ docAvail }}" onChange="{{ onDocAvail }}">
+        <option>Any time</option><option>Available today</option><option>Available this week</option>
+      </select>
+    </div>
+    <div class="field"><label>Sort by</label>
+      <select class="input" value="{{ docSort }}" onChange="{{ onDocSort }}">
+        <option>Soonest available</option><option>Name (A–Z)</option><option>Consultation fee</option>
+      </select>
+    </div>
+  </div>
+  <p style="font-size:13px;opacity:.6;margin-bottom:var(--space-4)">{{ docCountLine }}</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--space-4)">
+    <sc-for list="{{ filteredDoctors }}" as="d" hint-placeholder-count="4">
+      <div class="card elev-sm" style="padding:clamp(20px,2.5vw,28px);gap:var(--space-2)">
+        <div style="display:flex;gap:var(--space-3);align-items:flex-start">
+          <span style="width:46px;height:46px;flex:none;border-radius:999px;background:var(--color-accent-200);color:var(--color-accent-800);display:grid;place-items:center;font-family:var(--font-heading);font-size:16px">{{ d.initials }}</span>
+          <div style="flex:1">
+            <p style="font-family:var(--font-heading);font-size:20px;line-height:1.15;margin:0">{{ d.name }}</p>
+            <p style="font-size:13px;color:var(--color-accent-700);margin:3px 0 0">{{ d.spec }}</p>
+            <p style="font-size:12px;opacity:.6;margin:2px 0 0">{{ d.qual }}</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:var(--space-4);font-size:13px;opacity:.8;flex-wrap:wrap;margin-top:var(--space-2)">
+          <span>{{ d.fee }}</span><span>{{ d.len }}</span>
+        </div>
+        <p style="font-size:13px;margin:var(--space-2) 0 0;color:{{ d.availColor }}">{{ d.next }}</p>
+        <button class="btn btn-primary" style="align-self:flex-start;margin-top:var(--space-3)" disabled="{{ d.disabled }}" onClick="{{ d.book }}">View profile and book</button>
+      </div>
+    </sc-for>
+  </div>
+  <sc-if value="{{ noDoctors }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:var(--space-8) 0;max-width:44ch">
+      <h3>No doctors match your search.</h3>
+      <p style="opacity:.7">Try a different specialisation, or clear your filters.</p>
+      <button class="btn btn-secondary" onClick="{{ clearDocFilters }}">Clear filters</button>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 5 — BOOK AN APPOINTMENT ═══════════ -->
+<sc-if value="{{ isBook }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <a href="#" onClick="{{ nav.doctors }}" style="font-size:13px">← Back to all doctors</a>
+
+  <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin:var(--space-6) 0 var(--space-8)">
+    <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+      <span style="display:flex;align-items:center;gap:9px;padding:6px 18px 6px 6px;border-radius:999px;background:{{ st.bg }};color:{{ st.fg }};font-size:13px">
+        <span style="width:26px;height:26px;border-radius:999px;background:{{ st.dot }};color:{{ st.dotFg }};display:grid;place-items:center;font-family:var(--font-heading);font-size:12px">{{ st.n }}</span>{{ st.label }}
+      </span>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ bookCols }};gap:var(--space-8);align-items:start">
+    <div>
+      <sc-if value="{{ step1 }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <h1 style="font-size:clamp(30px,3.8vw,44px);margin-bottom:var(--space-2)">{{ bookHeading }}</h1>
+        <p style="opacity:.7;font-size:14px">You can book up to 30 days ahead. Times shown in your time zone ({{ patientTz }}).</p>
+
+        <h6 style="opacity:.6;margin:var(--space-6) 0 var(--space-3)">Pick a date</h6>
+        <div style="display:flex;gap:var(--space-2);overflow-x:auto;padding-bottom:var(--space-3)">
+          <sc-for list="{{ dateChips }}" as="d" hint-placeholder-count="8">
+            <button onClick="{{ d.pick }}" disabled="{{ d.disabled }}" title="{{ d.reason }}" style="flex:none;width:78px;padding:12px 0;border-radius:var(--radius-lg);border:1px solid {{ d.border }};background:{{ d.bg }};color:{{ d.fg }};cursor:pointer;opacity:{{ d.opacity }};font-family:var(--font-body)">
+              <span style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.7">{{ d.day }}</span>
+              <span style="display:block;font-family:var(--font-heading);font-size:22px;line-height:1.2">{{ d.num }}</span>
+              <span style="display:block;font-size:11px;opacity:.7">{{ d.mon }}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap;margin:var(--space-6) 0 var(--space-2)">
+          <h3 style="margin:0">Available times on {{ activeDateLong }}</h3>
+          <button class="btn btn-ghost" onClick="{{ refreshSlots }}">Refresh availability</button>
+        </div>
+        <p style="font-size:12px;opacity:.6">All times shown in {{ patientTz }}. Slots can be taken by others while you're deciding.</p>
+
+        <sc-if value="{{ hasSlots }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:var(--space-2);margin-top:var(--space-4)">
+            <sc-for list="{{ slotChips }}" as="sl" hint-placeholder-count="9">
+              <button onClick="{{ sl.pick }}" style="padding:12px;border-radius:999px;border:1px solid {{ sl.border }};background:{{ sl.bg }};color:{{ sl.fg }};font-size:13px;cursor:pointer;font-family:var(--font-body)">{{ sl.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noSlots }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:var(--space-4);background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);max-width:52ch">
+            <h4 style="margin-bottom:6px">{{ noSlotsTitle }}</h4>
+            <p style="font-size:14px;margin:0 0 var(--space-3);color:var(--color-accent-800)">{{ noSlotsBody }}</p>
+            <button class="btn btn-secondary" onClick="{{ nav.doctors }}">See other {{ docSpecName }} doctors</button>
+          </div>
+        </sc-if>
+
+        <div style="margin-top:var(--space-8)">
+          <button class="btn btn-primary" style="padding:12px 28px;font-size:15px" disabled="{{ noSlotPicked }}" onClick="{{ toStep2 }}">Continue to symptom details</button>
+          <p style="font-size:12px;opacity:.6;margin-top:var(--space-2)">We'll hold this time for 10 minutes while you tell us what's wrong.</p>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ step2 }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <sc-if value="{{ holdExpired }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--color-accent-200);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin-bottom:var(--space-6);max-width:56ch">
+            <h3 style="margin-bottom:6px">Your hold has expired</h3>
+            <p style="font-size:14px;color:var(--color-accent-900)">The 10 minutes ran out and the slot returned to the schedule. It may still be free.</p>
+            <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+              <button class="btn btn-primary" onClick="{{ retryHold }}">Try that time again</button>
+              <button class="btn btn-secondary" onClick="{{ backToStep1 }}">Pick a different time</button>
+            </div>
+            <p style="font-size:12px;opacity:.7;margin:var(--space-3) 0 0">What you've written so far has been kept.</p>
+          </div>
+        </sc-if>
+
+        <h1 style="font-size:clamp(30px,3.8vw,44px);margin-bottom:var(--space-2)">Tell us what's going on</h1>
+        <p style="opacity:.75;max-width:56ch;text-wrap:pretty">Your doctor reads this before your appointment, so the consultation can start with what matters.</p>
+
+        <div style="background:var(--color-accent-700);color:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin:var(--space-6) 0;max-width:62ch">
+          <p style="margin:0;font-size:14px;font-weight:700;line-height:1.55;text-wrap:pretty">If you're experiencing chest pain, difficulty breathing, sudden weakness or numbness, severe bleeding, or thoughts of harming yourself — do not book an appointment. Call your local emergency number now.</p>
+        </div>
+
+        <div style="display:grid;gap:var(--space-4);max-width:640px">
+          <div class="field">
+            <label>What are you experiencing?</label>
+            <textarea class="input" style="border-radius:var(--radius-lg);min-height:110px" value="{{ symptoms }}" onChange="{{ onSymptoms }}" placeholder="Describe your symptoms in your own words."></textarea>
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Describe your symptoms in your own words. There's no wrong way to say it.</p>
+            <sc-if value="{{ symptomError }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:12px;color:var(--color-accent-800);margin:6px 0 0">Please describe what you're experiencing so your doctor can prepare.</p>
+            </sc-if>
+          </div>
+          <div class="field"><label>How long has this been going on?</label><input class="input" placeholder="For example: 3 days, since last Monday, on and off for a month"></div>
+          <div class="field">
+            <label>How severe is it right now? — {{ severity }} out of 10</label>
+            <input type="range" min="1" max="10" value="{{ severity }}" onChange="{{ onSeverity }}" style="width:100%;accent-color:var(--color-accent)">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">A scale from 1 to 10, where 1 is barely noticeable and 10 is the worst you've felt.</p>
+          </div>
+          <div class="field"><label>Any ongoing conditions?</label><input class="input" placeholder="diabetes, high blood pressure, asthma — or None"></div>
+          <div class="field"><label>What medication are you currently taking?</label><input class="input" placeholder="Include the name and dose if you know it, and anything over the counter"></div>
+          <div class="field"><label>Any allergies?</label><input class="input" placeholder="Medications, foods, or anything else your doctor should know about"></div>
+          <div class="field"><label>Anything else you'd like your doctor to know?</label><textarea class="input" style="border-radius:var(--radius-lg)" placeholder="Optional. Anything that didn't fit above."></textarea></div>
+        </div>
+
+        <p style="font-size:13px;background:var(--color-accent-2-100);color:var(--color-accent-2-800);padding:12px 18px;border-radius:var(--radius-md);max-width:62ch;margin-top:var(--space-6);text-wrap:pretty">What you write here is shared with your doctor only. It never appears in emails or calendar entries.</p>
+
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center;margin-top:var(--space-6)">
+          <button class="btn btn-primary" style="padding:12px 28px;font-size:15px" onClick="{{ confirmBooking }}">Confirm appointment</button>
+          <button class="btn btn-secondary" onClick="{{ backToStep1 }}">Choose a different time</button>
+        </div>
+        <p style="font-size:12px;opacity:.6;margin-top:var(--space-2)">Choosing a different time releases the slot you're holding.</p>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ step3 }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <span style="width:56px;height:56px;border-radius:999px;background:var(--color-accent-2-500);color:var(--color-bg);display:grid;place-items:center;font-family:var(--font-heading);font-size:26px">✓</span>
+        <h1 style="font-size:clamp(34px,4.4vw,52px);margin:var(--space-4) 0 var(--space-2)">You're booked</h1>
+        <p style="opacity:.75">We've sent a confirmation to {{ patientEmail }}.</p>
+
+        <div class="card elev-sm" style="padding:var(--space-6);max-width:560px;margin-top:var(--space-6);gap:0">
+          <sc-for list="{{ confirmRows }}" as="r" hint-placeholder-count="7">
+            <div style="display:flex;justify-content:space-between;gap:var(--space-4);padding:9px 0;border-bottom:1px solid var(--color-divider);font-size:14px">
+              <span style="opacity:.6">{{ r.k }}</span><span style="text-align:right">{{ r.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <h3 style="margin:var(--space-8) 0 var(--space-4)">What happens next</h3>
+        <div style="display:grid;gap:var(--space-4);max-width:600px">
+          <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="4">
+            <div style="display:flex;gap:var(--space-3)">
+              <span style="width:30px;height:30px;flex:none;border-radius:999px;background:var(--color-accent-200);color:var(--color-accent-800);display:grid;place-items:center;font-family:var(--font-heading);font-size:14px">{{ n.n }}</span>
+              <div><p style="margin:0;font-weight:700;font-size:15px">{{ n.t }}</p><p style="margin:2px 0 0;font-size:14px;opacity:.75;text-wrap:pretty">{{ n.b }}</p></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin-top:var(--space-6);max-width:600px">
+          <h4 style="margin-bottom:6px">Want appointments to appear in your calendar automatically?</h4>
+          <p style="font-size:14px;color:var(--color-accent-800);text-wrap:pretty">Connect Google Calendar once, and every booking, change, and cancellation syncs on its own.</p>
+          <button class="btn btn-primary" onClick="{{ connectCal }}">Connect Google Calendar</button>
+        </div>
+
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">
+          <button class="btn btn-primary" style="padding:12px 24px" onClick="{{ openUpcoming }}">View appointment details</button>
+          <button class="btn btn-secondary" style="padding:12px 24px" onClick="{{ nav.app }}">Back to dashboard</button>
+        </div>
+        <p style="font-size:13px;opacity:.65;margin-top:var(--space-4);max-width:52ch;text-wrap:pretty">Arrive a few minutes early. If anything changes, you can reschedule or cancel from your appointment details.</p>
+      </div>
+      </sc-if>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-4)">
+      <sc-if value="{{ showHold }}" hint-placeholder-val="{{ false }}">
+        <div style="background:{{ holdBg }};color:{{ holdFg }};border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6)">
+          <p style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:0;opacity:.75">Time remaining to confirm</p>
+          <p style="font-family:var(--font-heading);font-size:44px;line-height:1.1;margin:6px 0 var(--space-2)">{{ holdText }}</p>
+          <p style="font-size:13px;margin:0;opacity:.85;text-wrap:pretty">{{ holdNote }}</p>
+          <div style="margin-top:var(--space-4);border-top:1px solid color-mix(in srgb, currentColor 25%, transparent);padding-top:var(--space-3);font-size:14px">
+            <p style="margin:0;font-weight:700">{{ docName }}</p>
+            <p style="margin:2px 0 0;opacity:.8">{{ docSpecName }}</p>
+            <p style="margin:6px 0 0">{{ heldWhen }}</p>
+            <p style="margin:2px 0 0;opacity:.8">{{ docLen }}</p>
+          </div>
+        </div>
+      </sc-if>
+
+      <div class="card" style="padding:var(--space-6);gap:var(--space-2)">
+        <span style="width:52px;height:52px;border-radius:999px;background:var(--color-accent-200);color:var(--color-accent-800);display:grid;place-items:center;font-family:var(--font-heading);font-size:18px">{{ docInitials }}</span>
+        <p style="font-family:var(--font-heading);font-size:21px;line-height:1.15;margin:var(--space-2) 0 0">{{ docName }}</p>
+        <p style="font-size:13px;color:var(--color-accent-700);margin:0">{{ docSpecName }}</p>
+        <p style="font-size:12px;opacity:.6;margin:0">{{ docQual }}</p>
+        <p style="font-size:13px;opacity:.8;margin:var(--space-2) 0 0;text-wrap:pretty">{{ docBio }}</p>
+        <div style="border-top:1px solid var(--color-divider);margin-top:var(--space-3);padding-top:var(--space-3);display:grid;gap:6px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;gap:var(--space-3)"><span style="opacity:.6">Fee</span><span>{{ docFee }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:var(--space-3)"><span style="opacity:.6">Length</span><span>{{ docLen }}</span></div>
+          <p style="margin:6px 0 0;opacity:.75">{{ docDays }}</p>
+          <p style="margin:0;font-size:12px;opacity:.6">Times shown in your time zone ({{ patientTz }}).</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 6 — APPOINTMENT DETAILS ═══════════ -->
+<sc-if value="{{ isAppt }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <a href="#" onClick="{{ nav.app }}" style="font-size:13px">← Back to dashboard</a>
+  <div style="display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin:var(--space-6) 0 var(--space-2)">
+    <h1 style="font-size:clamp(30px,3.8vw,46px);margin:0">Appointment with {{ aDoctor }}</h1>
+    <span class="tag {{ aStatusTag }}">{{ aStatus }}</span>
+  </div>
+  <p style="opacity:.7">{{ aSpec }}</p>
+
+  <div style="display:grid;grid-template-columns:{{ apptCols }};gap:var(--space-8);align-items:start;margin-top:var(--space-6)">
+    <div>
+      <div class="card elev-sm" style="padding:var(--space-6);gap:0;max-width:620px">
+        <sc-for list="{{ apptRows }}" as="r" hint-placeholder-count="7">
+          <div style="display:flex;justify-content:space-between;gap:var(--space-4);padding:9px 0;border-bottom:1px solid var(--color-divider);font-size:14px">
+            <span style="opacity:.6">{{ r.k }}</span><span style="text-align:right">{{ r.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ aMovedFrom }}" hint-placeholder-val="{{ false }}">
+        <p style="font-size:13px;opacity:.7;margin-top:var(--space-3)">{{ aMovedFrom }}</p>
+      </sc-if>
+
+      <!-- Cancelled -->
+      <sc-if value="{{ aCancelled }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin-top:var(--space-6);max-width:620px">
+          <h4 style="margin-bottom:6px">{{ aStatus }}</h4>
+          <p style="font-size:14px;color:var(--color-accent-800);margin-bottom:var(--space-2)">Cancelled on 28 June 2026. Dr. Menon is unavailable on this date. We're sorry for the disruption.</p>
+          <button class="btn btn-primary" onClick="{{ nav.doctors }}">Book another time</button>
+        </div>
+      </sc-if>
+
+      <!-- Completed with summary -->
+      <sc-if value="{{ aComplete }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:var(--space-8);max-width:680px">
+          <h2 style="font-size:clamp(26px,3vw,36px);margin-bottom:6px">Your visit summary</h2>
+          <p style="font-size:13px;opacity:.6;margin-bottom:var(--space-6)">Written in plain language from Dr. Ilesanmi's notes. Prepared automatically from what was written. Not medical advice.</p>
+          <p style="font-size:16px;line-height:1.7;text-wrap:pretty">You came in with an itchy, scaly rash on both forearms that had been getting worse over about three weeks. Dr. Ilesanmi examined the area and found no sign of infection. The pattern and timing point to contact dermatitis, most likely from a new detergent.</p>
+          <p style="font-size:16px;line-height:1.7;text-wrap:pretty">The plan is a short course of a steroid cream to settle the inflammation, plus an antihistamine at night so the itching doesn't keep you awake. Switch back to your previous detergent and rewash anything worn against the skin.</p>
+
+          <h4 style="margin:var(--space-6) 0 var(--space-2)">What you were diagnosed with</h4>
+          <p style="font-size:15px;margin:0">Contact dermatitis, both forearms.</p>
+
+          <h4 style="margin:var(--space-6) 0 var(--space-3)">Your medication</h4>
+          <div style="display:grid;gap:var(--space-2)">
+            <sc-for list="{{ summaryMeds }}" as="m" hint-placeholder-count="2">
+              <div class="card" style="padding:var(--space-4) var(--space-6);gap:2px">
+                <p style="font-family:var(--font-heading);font-size:17px;margin:0">{{ m.name }} · {{ m.dose }}</p>
+                <p style="font-size:14px;opacity:.8;margin:0">{{ m.freq }} · {{ m.times }}</p>
+                <p style="font-size:13px;opacity:.65;margin:0">{{ m.duration }} · {{ m.instr }}</p>
+              </div>
+            </sc-for>
+          </div>
+
+          <h4 style="margin:var(--space-6) 0 var(--space-2)">Next steps</h4>
+          <ul style="font-size:15px;line-height:1.7;padding-left:20px;margin:0">
+            <li>Stop using the new detergent and rewash recently worn clothes.</li>
+            <li>Apply the cream thinly, twice a day, for seven days — no longer.</li>
+            <li>Come back if the rash spreads, weeps, or hasn't improved in ten days.</li>
+          </ul>
+
+          <div style="background:var(--color-accent-2-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin-top:var(--space-6)">
+            <h4 style="margin-bottom:4px">Follow-up appointment</h4>
+            <p style="font-size:14px;color:var(--color-accent-2-800);margin-bottom:var(--space-3)">Recommended on or after Monday, 14 September 2026.</p>
+            <button class="btn btn-primary" onClick="{{ nav.doctors }}">Book follow-up</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ aAwaiting }}" hint-placeholder-val="{{ false }}">
+        <div style="background:var(--color-neutral-200);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin-top:var(--space-6);max-width:56ch">
+          <p style="margin:0;font-size:15px;text-wrap:pretty">Dr. Hargreaves hasn't added notes for this visit yet. You'll get an email as soon as your summary is ready.</p>
+        </div>
+      </sc-if>
+
+      <!-- What you told us -->
+      <div style="margin-top:var(--space-8);max-width:680px">
+        <div style="display:flex;align-items:baseline;gap:var(--space-3)">
+          <h3 style="margin:0">What you told us</h3>
+          <sc-if value="{{ aUpcoming }}" hint-placeholder-val="{{ true }}"><button class="btn btn-ghost" onClick="{{ editIntake }}">Edit</button></sc-if>
+        </div>
+        <p style="font-size:12px;opacity:.6;margin-top:6px">Visible to you and your doctor only. Never included in emails or calendar entries.</p>
+        <div style="display:grid;gap:var(--space-3);margin-top:var(--space-4)">
+          <sc-for list="{{ intake }}" as="i" hint-placeholder-count="7">
+            <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-2)">
+              <p style="font-size:12px;opacity:.55;margin:0">{{ i.k }}</p>
+              <p style="font-size:15px;margin:2px 0 0;text-wrap:pretty">{{ i.v }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <sc-if value="{{ aUpcoming }}" hint-placeholder-val="{{ true }}">
+        <div class="card" style="padding:var(--space-6)">
+          <h4 style="margin-bottom:var(--space-2)">Need to change something?</h4>
+          <button class="btn btn-primary btn-block" style="margin:0 0 var(--space-2)" onClick="{{ openResched }}">Reschedule</button>
+          <button class="btn btn-secondary btn-block" style="margin:0" onClick="{{ openCancelDlg }}">Cancel appointment</button>
+        </div>
+      </sc-if>
+      <div class="card" style="padding:var(--space-6);gap:6px">
+        <h4 style="margin-bottom:2px">Calendar</h4>
+        <p style="font-size:13px;opacity:.75;margin:0">{{ calLine }}</p>
+        <button class="btn btn-secondary" style="align-self:flex-start;margin-top:var(--space-2)" onClick="{{ nav.settings }}">Open Settings</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Reschedule -->
+  <sc-if value="{{ rescheduleOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog" style="width:min(620px,100%);max-height:86vh;overflow:auto">
+        <p class="dialog-title">Move your appointment</p>
+        <p class="dialog-body" style="margin:0">Currently {{ aDate }}, {{ aTime }} with {{ aDoctor }}.</p>
+        <div style="display:flex;gap:var(--space-2);overflow-x:auto;padding-bottom:var(--space-2)">
+          <sc-for list="{{ dateChips }}" as="d" hint-placeholder-count="8">
+            <button onClick="{{ d.pick }}" disabled="{{ d.disabled }}" style="flex:none;width:70px;padding:10px 0;border-radius:var(--radius-lg);border:1px solid {{ d.border }};background:{{ d.bg }};color:{{ d.fg }};cursor:pointer;opacity:{{ d.opacity }};font-family:var(--font-body)">
+              <span style="display:block;font-size:10px;text-transform:uppercase;opacity:.7">{{ d.day }}</span>
+              <span style="display:block;font-family:var(--font-heading);font-size:19px">{{ d.num }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
+          <sc-for list="{{ slotChips }}" as="sl" hint-placeholder-count="6">
+            <button onClick="{{ sl.pick }}" style="padding:10px;border-radius:999px;border:1px solid {{ sl.border }};background:{{ sl.bg }};color:{{ sl.fg }};font-size:13px;cursor:pointer;font-family:var(--font-body)">{{ sl.label }}</button>
+          </sc-for>
+        </div>
+        <p style="font-size:12px;opacity:.7;margin:0">Everything you've already told your doctor moves with you. Your calendar entry and confirmation email will be updated automatically.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ closeDialogs }}">Keep current time</button>
+          <button class="btn btn-primary" onClick="{{ confirmResched }}">Confirm new time</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Cancel -->
+  <sc-if value="{{ cancelOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog">
+        <p class="dialog-title">{{ cancelQuestion }}</p>
+        <p class="dialog-body" style="margin:0">Why are you cancelling?</p>
+        <div style="display:grid;gap:8px">
+          <sc-for list="{{ cancelReasons }}" as="r" hint-placeholder-count="4">
+            <label class="radio"><input type="radio" name="cancelreason" checked="{{ r.on }}" onChange="{{ r.pick }}"><span class="dot"></span>{{ r.label }}</label>
+          </sc-for>
+        </div>
+        <sc-if value="{{ cancelOther }}" hint-placeholder-val="{{ false }}">
+          <div class="field"><label>Tell us more (optional)</label><input class="input"></div>
+        </sc-if>
+        <p style="font-size:13px;color:var(--color-accent-800);margin:0">This can't be undone. The slot will be released to other patients.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ closeDialogs }}">Keep my appointment</button>
+          <button class="btn btn-primary" onClick="{{ confirmCancel }}">Yes, cancel it</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 7 — PRESCRIPTIONS ═══════════ -->
+<sc-if value="{{ isRx }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:6px">Your prescriptions</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-8)">Everything your doctors have prescribed, and when to take it.</p>
+
+  <div style="display:grid;grid-template-columns:{{ dashCols }};gap:var(--space-8);align-items:start">
+    <div>
+      <sc-for list="{{ prescriptions }}" as="p" hint-placeholder-count="2">
+        <div style="margin-bottom:var(--space-8)">
+          <p style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;opacity:.5;margin-bottom:var(--space-2)">{{ p.group }}</p>
+          <div class="card elev-sm" style="padding:clamp(20px,2.6vw,30px);gap:var(--space-3)">
+            <div style="display:flex;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap;align-items:flex-start">
+              <div>
+                <p style="font-family:var(--font-heading);font-size:20px;margin:0">{{ p.doctor }}</p>
+                <p style="font-size:13px;opacity:.7;margin:2px 0 0">{{ p.spec }} · Issued {{ p.issued }}</p>
+              </div>
+              <span class="tag {{ p.tag }}">{{ p.status }}</span>
+            </div>
+            <sc-for list="{{ p.meds }}" as="m" hint-placeholder-count="2">
+              <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+                <p style="font-family:var(--font-heading);font-size:17px;margin:0">{{ m.name }} · {{ m.dose }}</p>
+                <p style="font-size:14px;margin:3px 0 0">{{ m.freq }} — {{ m.times }}</p>
+                <p style="font-size:13px;opacity:.7;margin:2px 0 0">{{ m.duration }} · {{ m.instr }}</p>
+                <p style="font-size:13px;color:var(--color-accent-2-700);margin:4px 0 0">{{ m.progress }}</p>
+              </div>
+            </sc-for>
+            <button class="btn btn-ghost" style="align-self:flex-start" onClick="{{ p.viewVisit }}">View that visit</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-4)">
+      <div class="card" style="padding:var(--space-6);gap:var(--space-2)">
+        <h4 style="margin:0">Medication reminders</h4>
+        <p style="font-size:13px;opacity:.75;margin:0">We'll email you when it's time to take each dose, based on your prescription.</p>
+        <label class="radio" style="margin-top:var(--space-2)">
+          <input type="checkbox" checked="{{ remindersOn }}" onChange="{{ toggleReminders }}"><span class="dot"></span>{{ reminderState }}
+        </label>
+        <p style="font-size:12px;opacity:.6;margin:var(--space-2) 0 0">Reminders are sent in your time zone ({{ patientTz }}). Nothing is sent between 10:00 PM and 7:00 AM.</p>
+      </div>
+
+      <div class="card" style="padding:var(--space-6);gap:var(--space-2)">
+        <h4 style="margin:0">Next reminders</h4>
+        <sc-if value="{{ remindersOn }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;gap:var(--space-2)">
+            <sc-for list="{{ nextReminders }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;gap:var(--space-3);font-size:13px;border-bottom:1px solid var(--color-divider);padding-bottom:6px">
+                <span>{{ r.name }} {{ r.dose }}</span><span style="opacity:.7;text-align:right">{{ r.when }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ remindersOff }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px;opacity:.7;margin:0">Reminders are turned off. Turn them on above to see your schedule.</p>
+        </sc-if>
+      </div>
+
+      <p style="font-size:13px;background:var(--color-accent-100);color:var(--color-accent-800);padding:var(--space-4) var(--space-6);border-radius:calc(var(--radius-lg) * 1.15);margin:0;text-wrap:pretty">Curalis reminds you what your doctor prescribed. It never changes a dose or a schedule. If something here doesn't match what you were told, contact your doctor.</p>
+    </aside>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 8 — DOCTOR DASHBOARD ═══════════ -->
+<sc-if value="{{ isDoc }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:6px">Good morning, Dr. Raghavan</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-6)">{{ docDateLine }}</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-3);margin-bottom:var(--space-8)">
+    <sc-for list="{{ docStats }}" as="st" hint-placeholder-count="4">
+      <div class="card" style="padding:var(--space-4) var(--space-6);gap:0">
+        <p style="font-family:var(--font-heading);font-size:36px;line-height:1;margin:0;color:{{ st.color }}">{{ st.n }}</p>
+        <p style="font-size:13px;opacity:.7;margin:6px 0 0">{{ st.label }}</p>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ dashCols }};gap:var(--space-8);align-items:start">
+    <div>
+      <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-4)">
+        <h3 style="margin:0;flex:1">Today's schedule</h3>
+        <button class="btn btn-secondary btn-icon" onClick="{{ prevDay }}">‹</button>
+        <button class="btn btn-secondary" onClick="{{ todayDay }}">Today</button>
+        <button class="btn btn-secondary btn-icon" onClick="{{ nextDay }}">›</button>
+      </div>
+      <p style="font-size:12px;opacity:.6;margin-bottom:var(--space-4)">All times shown in Asia/Kolkata (IST).</p>
+
+      <sc-for list="{{ docSchedule }}" as="a" hint-placeholder-count="5">
+        <div class="card" style="flex-direction:row;gap:var(--space-4);flex-wrap:wrap;align-items:flex-start;margin-bottom:var(--space-2);padding:var(--space-4) var(--space-6);border-left:4px solid {{ a.urgColor }}">
+          <div style="min-width:110px">
+            <p style="font-family:var(--font-heading);font-size:17px;margin:0">{{ a.start }}</p>
+            <p style="font-size:12px;opacity:.6;margin:2px 0 0">{{ a.end }}</p>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <p style="font-size:16px;font-weight:700;margin:0">{{ a.patient }}</p>
+            <p style="font-size:12px;opacity:.65;margin:2px 0 0">{{ a.demo }} · {{ a.visitKind }}</p>
+            <p style="font-size:14px;margin:6px 0 0;text-wrap:pretty">{{ a.complaint }}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+            <span class="tag {{ a.urgTag }}">{{ a.urgency }}</span>
+            <span style="font-size:12px;opacity:.6">{{ a.status }}</span>
+            <button class="btn btn-primary" onClick="{{ a.open }}">Open</button>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ docNoAppts }}" hint-placeholder-val="{{ false }}">
+        <p style="opacity:.65">{{ docEmptyLine }}</p>
+      </sc-if>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-4)">
+      <div class="card" style="padding:var(--space-6);gap:var(--space-3)">
+        <h4 style="margin:0">Awaiting your notes</h4>
+        <sc-for list="{{ awaitingNotes }}" as="n" hint-placeholder-count="2">
+          <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-2)">
+            <p style="font-size:15px;margin:0">{{ n.patient }}</p>
+            <p style="font-size:12px;opacity:.65;margin:2px 0 0">{{ n.date }} · {{ n.ago }}</p>
+            <button class="btn btn-ghost" style="padding-left:0" onClick="{{ n.open }}">Add notes</button>
+          </div>
+        </sc-for>
+      </div>
+
+      <div class="card" style="padding:var(--space-6);gap:6px">
+        <h4 style="margin:0 0 var(--space-2)">Your schedule</h4>
+        <p style="font-size:13px;margin:0">Monday to Friday, 9:00 AM – 1:00 PM and 3:00 PM – 6:00 PM</p>
+        <p style="font-size:13px;opacity:.75;margin:0">30 minute consultations</p>
+        <p style="font-size:13px;opacity:.75;margin:0">Leave: 12–13 September 2026</p>
+        <p style="font-size:12px;opacity:.6;margin:var(--space-2) 0 0">Your working hours and leave are managed by your clinic administrator.</p>
+      </div>
+
+      <div style="background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6)">
+        <p style="font-size:13px;color:var(--color-accent-800);margin:0 0 var(--space-3);text-wrap:pretty">Connect your Google Calendar in Settings to see your consultations alongside the rest of your day.</p>
+        <button class="btn btn-primary" onClick="{{ nav.settings }}">Open Settings</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 9 — CONSULTATION ═══════════ -->
+<sc-if value="{{ isConsult }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <a href="#" onClick="{{ nav.doctor }}" style="font-size:13px">← Back to today's schedule</a>
+
+  <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin:var(--space-6) 0 var(--space-8)">
+    <sc-for list="{{ phases }}" as="ph" hint-placeholder-count="3">
+      <button onClick="{{ ph.pick }}" style="display:flex;align-items:center;gap:9px;padding:6px 18px 6px 6px;border-radius:999px;border:none;cursor:pointer;background:{{ ph.bg }};color:{{ ph.fg }};font-size:13px;font-family:var(--font-body)">
+        <span style="width:26px;height:26px;border-radius:999px;background:{{ ph.dot }};color:{{ ph.dotFg }};display:grid;place-items:center;font-family:var(--font-heading);font-size:12px">{{ ph.n }}</span>{{ ph.label }}
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:{{ apptCols }};gap:var(--space-8);align-items:start">
+    <div>
+      <!-- PHASE 1 -->
+      <sc-if value="{{ phase1 }}" hint-placeholder-val="{{ true }}">
+      <div>
+        <h1 style="font-size:clamp(30px,3.8vw,46px);margin-bottom:6px">Rohan Bhatt</h1>
+        <p style="opacity:.7;margin-bottom:var(--space-6)">34 · Male · O+ · Returning patient</p>
+
+        <div style="background:var(--color-accent-2-700);color:var(--color-accent-2-100);border-radius:calc(var(--radius-lg) * 1.15);padding:clamp(20px,2.6vw,30px);max-width:700px">
+          <div style="display:flex;justify-content:space-between;gap:var(--space-3);align-items:flex-start;flex-wrap:wrap">
+            <h3 style="margin:0;color:inherit">Pre-visit summary</h3>
+            <span class="tag" style="background:var(--color-accent-400);color:var(--color-accent-900)">Urgency: Medium</span>
+          </div>
+          <p style="font-size:12px;opacity:.75;margin:6px 0 var(--space-4)">Prepared from the patient's own description. For preparation only — not a clinical assessment.</p>
+          <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin:0">Chief complaint</p>
+          <p style="font-size:17px;margin:4px 0 var(--space-4);text-wrap:pretty">Eight days of dry cough with evening fever and disturbed sleep, on a background of mild asthma.</p>
+          <p style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin:0">Suggested questions</p>
+          <ul style="font-size:15px;line-height:1.7;margin:6px 0 0;padding-left:20px">
+            <li>Has the inhaler been needed more often than usual this week?</li>
+            <li>Any wheeze, chest tightness, or breathlessness on exertion?</li>
+            <li>Anyone at home or work with a similar cough?</li>
+          </ul>
+        </div>
+
+        <h3 style="margin:var(--space-8) 0 6px">Patient's own words</h3>
+        <p style="font-size:12px;opacity:.6;margin-bottom:var(--space-4)">This is exactly what the patient wrote. Submitted 3 September 2026, 9:14 PM.</p>
+        <div style="display:grid;gap:var(--space-3);max-width:700px">
+          <sc-for list="{{ intake }}" as="i" hint-placeholder-count="7">
+            <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-2)">
+              <p style="font-size:12px;opacity:.55;margin:0">{{ i.k }}</p>
+              <p style="font-size:15px;margin:2px 0 0;text-wrap:pretty">{{ i.v }}</p>
+            </div>
+          </sc-for>
+        </div>
+
+        <h3 style="margin:var(--space-8) 0 var(--space-3)">Previous visits with you</h3>
+        <div style="display:grid;gap:var(--space-2);max-width:700px">
+          <sc-for list="{{ priorVisits }}" as="v" hint-placeholder-count="2">
+            <div class="card" style="flex-direction:row;align-items:center;gap:var(--space-4);flex-wrap:wrap;padding:var(--space-4) var(--space-6)">
+              <span style="min-width:130px;font-size:14px">{{ v.date }}</span>
+              <span style="flex:1;min-width:200px;font-size:14px">{{ v.diagnosis }}<span style="display:block;opacity:.65;font-size:13px">{{ v.meds }}</span></span>
+              <button class="btn btn-ghost" onClick="{{ v.open }}">View that visit</button>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-8)">
+          <button class="btn btn-primary" style="padding:12px 28px;font-size:15px" onClick="{{ toPhase2 }}">Record consultation</button>
+          <button class="btn btn-secondary" onClick="{{ openDocCancel }}">Cancel appointment</button>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- PHASE 2 -->
+      <sc-if value="{{ phase2 }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <h1 style="font-size:clamp(28px,3.4vw,42px);margin-bottom:var(--space-6)">Record the consultation</h1>
+
+        <div class="field" style="max-width:700px;margin-bottom:var(--space-4)">
+          <label>Consultation notes</label>
+          <textarea class="input" style="border-radius:var(--radius-lg);min-height:170px" value="{{ notes }}" onChange="{{ onNotes }}" placeholder="Examination findings, impression, plan."></textarea>
+          <p style="font-size:11px;opacity:.6;margin:5px 0 0">Write these for your own records. Curalis will produce a plain-language version for the patient — you'll review it before it's sent.</p>
+          <sc-if value="{{ notesError }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:12px;color:var(--color-accent-800);margin:6px 0 0">Consultation notes are required.</p>
+          </sc-if>
+        </div>
+        <div class="field" style="max-width:700px;margin-bottom:var(--space-8)">
+          <label>Diagnosis</label>
+          <input class="input" placeholder="Optional. Shown to the patient in their summary.">
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap">
+          <h3 style="margin:0">Prescription</h3>
+          <button class="btn btn-ghost" onClick="{{ addMed }}">+ Add a medicine</button>
+        </div>
+        <p style="font-size:12px;opacity:.6;margin:6px 0 var(--space-4)">Add each medicine separately. Reminder times are generated from what you enter here.</p>
+
+        <div style="display:grid;gap:var(--space-3);max-width:760px">
+          <sc-for list="{{ medRows }}" as="m" hint-placeholder-count="1">
+            <div class="card" style="padding:var(--space-6);gap:var(--space-3)">
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-3)">
+                <div class="field"><label>Medicine name</label><input class="input" value="{{ m.name }}" onChange="{{ m.onName }}"></div>
+                <div class="field"><label>Dose</label><input class="input" value="{{ m.dose }}" onChange="{{ m.onDose }}" placeholder="500 mg, 1 tablet, 5 ml"></div>
+                <div class="field"><label>Frequency</label>
+                  <select class="input" value="{{ m.freq }}" onChange="{{ m.onFreq }}">
+                    <sc-for list="{{ freqOptions }}" as="f" hint-placeholder-count="6"><option>{{ f }}</option></sc-for>
+                  </select>
+                </div>
+                <div class="field"><label>Duration (days)</label><input class="input" value="{{ m.days }}" onChange="{{ m.onDays }}"></div>
+                <div class="field" style="grid-column:1/-1"><label>Instructions</label><input class="input" value="{{ m.instr }}" onChange="{{ m.onInstr }}" placeholder="after food, with water, before sleeping"></div>
+                <div class="field" style="grid-column:1/-1"><label>Reminder times</label><input class="input" value="{{ m.times }}" readOnly="{{ true }}">
+                  <p style="font-size:11px;opacity:.6;margin:5px 0 0">Pre-filled from the frequency. Adjust if this patient needs different times.</p>
+                </div>
+              </div>
+              <p style="font-size:13px;color:var(--color-accent-2-700);margin:0;text-wrap:pretty">{{ m.preview }}</p>
+              <button class="btn btn-ghost" style="align-self:flex-start" onClick="{{ m.remove }}">Remove</button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noMeds }}" hint-placeholder-val="{{ false }}">
+            <p style="opacity:.65;font-size:14px">No medication prescribed for this visit.</p>
+          </sc-if>
+        </div>
+
+        <h3 style="margin:var(--space-8) 0 var(--space-3)">Follow-up</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-3);max-width:700px">
+          <div class="field"><label>Follow-up date</label><input class="input" type="date">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Optional. The patient will be prompted to book on or after this date.</p>
+          </div>
+          <div class="field"><label>Follow-up instructions</label><input class="input" placeholder="return if the fever persists beyond 3 days">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Optional.</p>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center;margin-top:var(--space-8)">
+          <button class="btn btn-primary" style="padding:12px 28px;font-size:15px" onClick="{{ askComplete }}">Save and complete visit</button>
+          <button class="btn btn-secondary" onClick="{{ saveDraft }}">Save as draft</button>
+        </div>
+        <p style="font-size:12px;opacity:.6;margin-top:var(--space-2)">Only you can see a draft. The patient isn't notified.</p>
+      </div>
+      </sc-if>
+
+      <!-- PHASE 3 -->
+      <sc-if value="{{ phase3 }}" hint-placeholder-val="{{ false }}">
+      <div style="max-width:700px">
+        <h1 style="font-size:clamp(28px,3.4vw,42px);margin-bottom:6px">Patient-facing summary</h1>
+        <p style="font-size:13px;opacity:.65;margin-bottom:var(--space-6)">This is what Rohan will see. It's written from your notes only. Prepared automatically from what was written. Not medical advice.</p>
+
+        <div class="card elev-sm" style="padding:clamp(20px,2.6vw,30px);gap:var(--space-3)">
+          <p style="font-size:16px;line-height:1.7;margin:0;text-wrap:pretty">You came in with a cough that has lasted just over a week, with a temperature in the evenings and broken sleep. On examination your chest was clear and your oxygen levels were normal, so this looks like a viral infection rather than a chest infection.</p>
+          <p style="font-size:16px;line-height:1.7;margin:0;text-wrap:pretty">Because your asthma can flare during an infection, keep your inhaler close and use it as you normally would. A short course of an antibiotic has been prescribed as a precaution given the fever pattern, along with something to settle the cough at night.</p>
+          <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+            <h4 style="margin-bottom:var(--space-2)">Your medication</h4>
+            <sc-for list="{{ medRows }}" as="m" hint-placeholder-count="1">
+              <p style="font-size:15px;margin:0 0 6px">{{ m.name }} {{ m.dose }} — {{ m.freq }} at {{ m.times }}, for {{ m.days }} days. {{ m.instr }}</p>
+            </sc-for>
+          </div>
+          <div style="border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+            <h4 style="margin-bottom:var(--space-2)">Next steps</h4>
+            <ul style="font-size:15px;line-height:1.7;margin:0;padding-left:20px">
+              <li>Finish the full course even if you feel better sooner.</li>
+              <li>Come back if you become breathless or the fever passes 38.5°C.</li>
+              <li>Book a follow-up if the cough is still there in ten days.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-6)">
+          <button class="btn btn-primary" style="padding:12px 28px" onClick="{{ approveSummary }}">Approve and send</button>
+          <button class="btn btn-secondary" onClick="{{ regenSummary }}">Regenerate</button>
+        </div>
+      </div>
+      </sc-if>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <div class="card" style="padding:var(--space-6);gap:6px">
+        <h4 style="margin:0 0 var(--space-2)">Rohan Bhatt</h4>
+        <p style="font-size:13px;margin:0">34 · Male · O+</p>
+        <p style="font-size:13px;margin:0;opacity:.75">rohan.bhatt@example.com · +91 98450 22117</p>
+        <p style="font-size:13px;margin:var(--space-2) 0 0;color:var(--color-accent-700);font-weight:700">Allergies: Penicillin — rash</p>
+        <p style="font-size:13px;margin:0;opacity:.8">Currently taking: Salbutamol inhaler as needed, Paracetamol 500 mg</p>
+        <div style="border-top:1px solid var(--color-divider);margin-top:var(--space-3);padding-top:var(--space-3);font-size:13px;opacity:.8">
+          <p style="margin:0">Friday, 5 September 2026</p>
+          <p style="margin:2px 0 0">10:00 AM – 10:30 AM · Confirmed</p>
+          <p style="margin:2px 0 0">Reference CUR-7K90R</p>
+        </div>
+      </div>
+      <p style="font-size:12px;opacity:.6;text-wrap:pretty;margin:0">Visible to you and your doctor only. Never included in emails or calendar entries.</p>
+    </aside>
+  </div>
+
+  <sc-if value="{{ completeOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog">
+        <p class="dialog-title">Complete this visit?</p>
+        <p class="dialog-body" style="margin:0">Rohan will receive their summary by email, and medication reminders will start.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ closeComplete }}">Keep editing</button>
+          <button class="btn btn-primary" onClick="{{ doComplete }}">Complete visit</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 10 — ADMIN DASHBOARD ═══════════ -->
+<sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:6px">Clinic administration</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-6)">Saturday, 5 September 2026</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-3);margin-bottom:var(--space-8)">
+    <sc-for list="{{ adminStats }}" as="st" hint-placeholder-count="7">
+      <div class="card" style="padding:var(--space-4) var(--space-6);gap:0">
+        <p style="font-family:var(--font-heading);font-size:32px;line-height:1;margin:0;color:{{ st.color }}">{{ st.n }}</p>
+        <p style="font-size:12px;opacity:.7;margin:6px 0 0">{{ st.label }}</p>
+      </div>
+    </sc-for>
+  </div>
+
+  <h3 style="margin-bottom:var(--space-3)">Needs attention</h3>
+  <div style="display:grid;gap:var(--space-2);margin-bottom:var(--space-8)">
+    <sc-for list="{{ attention }}" as="a" hint-placeholder-count="3">
+      <div style="display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-3) var(--space-6)">
+        <p style="flex:1;min-width:240px;margin:0;font-size:14px;color:var(--color-accent-800);text-wrap:pretty">{{ a.text }}</p>
+        <button class="btn btn-primary" onClick="{{ a.act }}">{{ a.label }}</button>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+    <h3 style="margin:0;flex:1">Doctors</h3>
+    <button class="btn btn-primary" onClick="{{ addDoctor }}">Add a doctor</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3);margin-bottom:var(--space-4);max-width:640px">
+    <div class="field"><label>Search</label><input class="input" placeholder="Search by name or specialisation" value="{{ adminQuery }}" onChange="{{ onAdminQuery }}"></div>
+    <div class="field"><label>Status</label>
+      <select class="input" value="{{ adminFilter }}" onChange="{{ onAdminFilter }}">
+        <option>All</option><option>Accepting appointments</option><option>Not accepting</option><option>On leave today</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="overflow-x:auto">
+    <table class="table" style="min-width:760px">
+      <thead><tr><th>Doctor</th><th>Consulting days</th><th>Next 7 days</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        <sc-for list="{{ adminDoctors }}" as="d" hint-placeholder-count="6">
+          <tr>
+            <td>
+              <span style="display:block;font-weight:700">{{ d.name }}</span>
+              <span style="display:block;font-size:12px;opacity:.65">{{ d.spec }} · {{ d.qual }}</span>
+              <span style="display:block;font-size:12px;opacity:.65">{{ d.len }}</span>
+            </td>
+            <td style="font-size:13px">{{ d.shortDays }}</td>
+            <td>{{ d.booked }}</td>
+            <td><span class="tag {{ d.tag }}">{{ d.statusLabel }}</span>
+              <sc-if value="{{ d.warn }}" hint-placeholder-val="{{ false }}">
+                <span style="display:block;font-size:12px;color:var(--color-accent-800);margin-top:4px">{{ d.warn }}</span>
+              </sc-if>
+            </td>
+            <td><button class="btn btn-secondary" onClick="{{ d.manage }}">Manage</button></td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin:var(--space-8) 0 var(--space-3)">Today across the clinic</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-3)">
+    <sc-for list="{{ clinicToday }}" as="c" hint-placeholder-count="4">
+      <div class="card" style="padding:var(--space-4) var(--space-6);gap:2px">
+        <p style="font-family:var(--font-heading);font-size:17px;margin:0">{{ c.name }}</p>
+        <p style="font-size:13px;opacity:.75;margin:0">{{ c.count }} appointments</p>
+        <p style="font-size:13px;opacity:.6;margin:0">{{ c.first }} – {{ c.last }}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 11 — ADD / MANAGE A DOCTOR ═══════════ -->
+<sc-if value="{{ isAdminDoc }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <a href="#" onClick="{{ nav.admin }}" style="font-size:13px">← Back to clinic administration</a>
+  <h1 style="font-size:clamp(30px,3.8vw,46px);margin:var(--space-6) 0 4px">{{ manageHeading }}</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-8)">{{ manageSub }}</p>
+
+  <div style="display:grid;grid-template-columns:{{ apptCols }};gap:var(--space-8);align-items:start">
+    <div style="display:grid;gap:var(--space-8);min-width:0">
+      <section>
+        <h3 style="margin-bottom:var(--space-4)">Account details</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)">
+          <div class="field"><label>Full name</label><input class="input" value="{{ mdName }}" onChange="{{ onMdName }}"></div>
+          <div class="field"><label>Email address</label><input class="input" type="email" value="{{ mdEmail }}" onChange="{{ onMdEmail }}">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">The doctor signs in with this and receives appointment notifications here.</p>
+          </div>
+          <sc-if value="{{ isNewDoctor }}" hint-placeholder-val="{{ false }}">
+            <div class="field"><label>Temporary password</label><input class="input" type="text">
+              <p style="font-size:11px;opacity:.6;margin:5px 0 0">The doctor should change this after their first sign-in.</p>
+            </div>
+          </sc-if>
+          <div class="field"><label>Phone number</label><input class="input" type="tel"></div>
+          <div class="field"><label>Time zone</label>
+            <select class="input"><option>Asia/Kolkata (IST)</option><option>Europe/London (BST)</option></select>
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Working hours below are interpreted in this time zone.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:var(--space-4)">Professional details</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)">
+          <div class="field"><label>Specialisation</label><input class="input" value="{{ mdSpec }}" onChange="{{ onMdSpec }}">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Patients search by this.</p>
+          </div>
+          <div class="field"><label>Qualification</label><input class="input" placeholder="MBBS, MD (General Medicine)"></div>
+          <div class="field"><label>Medical licence number</label><input class="input"></div>
+          <div class="field"><label>Consultation fee</label><input class="input"></div>
+          <div class="field" style="grid-column:1/-1"><label>Biography</label><textarea class="input" style="border-radius:var(--radius-lg)"></textarea>
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Shown to patients on the doctor's profile.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:var(--space-4)">Appointment settings</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3)">
+          <div class="field"><label>Consultation length (minutes)</label><input class="input" value="30" onChange="{{ noop }}">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">This also sets the spacing between bookable times.</p>
+          </div>
+          <div class="field"><label>How far ahead patients can book (days)</label><input class="input" value="30" onChange="{{ noop }}"></div>
+          <div class="field"><label>Minimum notice before a booking (minutes)</label><input class="input" value="60" onChange="{{ noop }}">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">Prevents last-minute bookings.</p>
+          </div>
+          <div class="field"><label>Accepting appointments</label>
+            <label class="radio" style="margin-top:6px"><input type="checkbox" checked="{{ accepting }}" onChange="{{ toggleAccepting }}"><span class="dot"></span>{{ acceptingLabel }}</label>
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">When switched off, this doctor won't appear in patient searches and no new bookings can be made. Existing appointments are unaffected.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:6px">Working hours</h3>
+        <p style="font-size:12px;opacity:.6;margin-bottom:var(--space-4)">Times are in the doctor's time zone (Asia/Kolkata). For a lunch break or a split shift, add two periods for the same day.</p>
+        <div style="display:grid;gap:var(--space-2)">
+          <sc-for list="{{ workingHours }}" as="w" hint-placeholder-count="7">
+            <div class="card" style="padding:var(--space-3) var(--space-6);gap:var(--space-2)">
+              <div style="display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap">
+                <label class="radio" style="min-width:150px"><input type="checkbox" checked="{{ w.on }}" onChange="{{ w.toggle }}"><span class="dot"></span>{{ w.day }}</label>
+                <span style="flex:1;min-width:200px;font-size:13px;opacity:.75">{{ w.preview }}</span>
+                <sc-if value="{{ w.on }}" hint-placeholder-val="{{ true }}">
+                  <button class="btn btn-ghost" onClick="{{ w.add }}">Add another period</button>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:var(--color-accent-100);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6);margin-top:var(--space-4)">
+          <p style="font-size:14px;color:var(--color-accent-800);margin:0 0 var(--space-2);text-wrap:pretty">3 appointments are already booked outside your new hours. They will not be cancelled and will still go ahead. Review them before saving.</p>
+          <sc-for list="{{ affected }}" as="x" hint-placeholder-count="3">
+            <p style="font-size:13px;margin:0;color:var(--color-accent-900)">{{ x }}</p>
+          </sc-for>
+        </div>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:6px">Leave</h3>
+        <p style="font-size:12px;opacity:.6;margin-bottom:var(--space-4)">Mark this doctor unavailable. Patients with appointments in that period are notified automatically.</p>
+
+        <div class="card" style="padding:var(--space-4) var(--space-6);margin-bottom:var(--space-4);flex-direction:row;align-items:center;gap:var(--space-4);flex-wrap:wrap">
+          <span style="flex:1;min-width:220px;font-size:14px">12–13 September 2026 · Full day<span style="display:block;font-size:12px;opacity:.65">Conference · recorded by Priya Nair</span></span>
+          <button class="btn btn-ghost" onClick="{{ removeLeave }}">Remove</button>
+        </div>
+
+        <sc-if value="{{ leaveForm }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--space-3)">
+            <div class="field"><label>Leave type</label><select class="input"><option>Full day or days</option><option>Part of a day</option></select></div>
+            <div class="field"><label>From</label><input class="input" type="date"></div>
+            <div class="field"><label>To</label><input class="input" type="date"></div>
+            <div class="field" style="grid-column:1/-1"><label>Reason</label><input class="input" placeholder="Optional. Shown to clinic staff only, never to patients."></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:var(--space-3)" onClick="{{ checkConflicts }}">Check for conflicts</button>
+        </sc-if>
+
+        <sc-if value="{{ leaveConflict }}" hint-placeholder-val="{{ false }}">
+          <div style="background:var(--color-accent-200);border-radius:calc(var(--radius-lg) * 1.15);padding:var(--space-6)">
+            <h4 style="margin-bottom:6px">4 appointments will be cancelled</h4>
+            <p style="font-size:14px;color:var(--color-accent-900);text-wrap:pretty">Marking Dr. Raghavan unavailable from 21 to 23 September 2026 affects the appointments below. Each patient will be emailed immediately with a link to rebook.</p>
+            <div style="overflow-x:auto">
+              <table class="table" style="min-width:560px">
+                <thead><tr><th>Patient</th><th>Email</th><th>When</th><th>Reference</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ conflicts }}" as="c" hint-placeholder-count="4">
+                    <tr><td>{{ c.name }}</td><td style="font-size:13px">{{ c.email }}</td><td style="font-size:13px">{{ c.when }}</td><td style="font-size:13px">{{ c.ref }}</td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <p style="font-size:13px;color:var(--color-accent-900);margin:var(--space-3) 0">These appointments cannot be restored after cancelling.</p>
+            <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+              <button class="btn btn-primary" onClick="{{ confirmLeave }}">Confirm and notify patients</button>
+              <button class="btn btn-secondary" onClick="{{ backToLeaveForm }}">Go back</button>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:var(--space-3)">Upcoming appointments</h3>
+        <div style="overflow-x:auto">
+          <table class="table" style="min-width:520px">
+            <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Status</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ docUpcoming }}" as="u" hint-placeholder-count="4">
+                <tr><td>{{ u.date }}</td><td>{{ u.time }}</td><td>{{ u.patient }}</td><td><span class="tag tag-accent-2">{{ u.status }}</span></td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside style="display:flex;flex-direction:column;gap:var(--space-3)">
+      <div class="card" style="padding:var(--space-6);gap:var(--space-2)">
+        <button class="btn btn-primary btn-block" style="margin:0" onClick="{{ saveDoctor }}">Save changes</button>
+        <button class="btn btn-secondary btn-block" style="margin:0" onClick="{{ openDeactivate }}">Deactivate this account</button>
+      </div>
+    </aside>
+  </div>
+
+  <sc-if value="{{ deactivateOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop">
+      <div class="dialog">
+        <p class="dialog-title">Deactivate Dr. Anita Raghavan?</p>
+        <p class="dialog-body" style="margin:0">They won't be able to sign in and won't appear in patient searches. Existing appointments are not cancelled.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ closeDeactivate }}">Cancel</button>
+          <button class="btn btn-primary" onClick="{{ doDeactivate }}">Deactivate</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 12 — NOTIFICATION LOG ═══════════ -->
+<sc-if value="{{ isNotif }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:6px">Notifications</h1>
+  <p style="opacity:.7;margin-bottom:var(--space-6)">Every email Curalis has sent, and anything that failed to reach its recipient.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-3);margin-bottom:var(--space-8)">
+    <sc-for list="{{ notifStats }}" as="st" hint-placeholder-count="4">
+      <div class="card" style="padding:var(--space-4) var(--space-6);gap:0">
+        <p style="font-family:var(--font-heading);font-size:32px;line-height:1;margin:0;color:{{ st.color }}">{{ st.n }}</p>
+        <p style="font-size:12px;opacity:.7;margin:6px 0 0">{{ st.label }}</p>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-3);margin-bottom:var(--space-4)">
+    <div class="field"><label>Status</label>
+      <select class="input" value="{{ notifStatus }}" onChange="{{ onNotifStatus }}">
+        <option>All</option><option>Sent</option><option>Waiting</option><option>Retrying</option><option>Failed</option>
+      </select>
+    </div>
+    <div class="field"><label>Type</label>
+      <select class="input" value="{{ notifType }}" onChange="{{ onNotifType }}">
+        <sc-for list="{{ notifTypes }}" as="t" hint-placeholder-count="8"><option>{{ t }}</option></sc-for>
+      </select>
+    </div>
+    <div class="field"><label>Date range</label><input class="input" type="date"></div>
+    <div class="field"><label>Search</label><input class="input" placeholder="Recipient email address"></div>
+  </div>
+
+  <div style="display:grid;gap:var(--space-2)">
+    <sc-for list="{{ notifications }}" as="n" hint-placeholder-count="6">
+      <div class="card" style="padding:var(--space-4) var(--space-6);flex-direction:row;gap:var(--space-4);flex-wrap:wrap;align-items:flex-start;border-left:4px solid {{ n.color }}">
+        <div style="flex:1;min-width:260px">
+          <p style="font-size:15px;font-weight:700;margin:0">{{ n.type }}</p>
+          <p style="font-size:13px;margin:2px 0 0;opacity:.8">{{ n.subject }}</p>
+          <p style="font-size:12px;margin:4px 0 0;opacity:.6">{{ n.email }} · {{ n.who }}</p>
+          <sc-if value="{{ n.reason }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:13px;margin:6px 0 0;color:var(--color-accent-800)">{{ n.reason }}</p>
+          </sc-if>
+        </div>
+        <div style="text-align:right;min-width:170px">
+          <span class="tag {{ n.tag }}">{{ n.status }}</span>
+          <p style="font-size:12px;opacity:.6;margin:6px 0 0">{{ n.timing }}</p>
+          <p style="font-size:12px;opacity:.6;margin:2px 0 0">{{ n.attempts }}</p>
+          <sc-if value="{{ n.canRetry }}" hint-placeholder-val="{{ false }}">
+            <button class="btn btn-primary" style="margin-top:8px" onClick="{{ n.retry }}">Retry now</button>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <sc-if value="{{ noNotifs }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:var(--space-8) 0;max-width:44ch">
+      <h3>No notifications match these filters.</h3>
+      <button class="btn btn-secondary" onClick="{{ clearNotifFilters }}">Clear filters</button>
+    </div>
+  </sc-if>
+
+  <p style="font-size:13px;background:var(--color-accent-100);color:var(--color-accent-800);padding:var(--space-4) var(--space-6);border-radius:calc(var(--radius-lg) * 1.15);margin-top:var(--space-6);max-width:70ch;text-wrap:pretty">Curalis retries failed emails automatically, waiting longer between each attempt, up to 5 times. Anything listed as Failed has exhausted its retries and needs a manual retry or a direct call to the patient.</p>
+</div>
+</sc-if>
+
+<!-- ═══════════ PAGE 13 — ACCOUNT SETTINGS ═══════════ -->
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="max-width:1180px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px">
+  <h1 style="font-size:clamp(34px,4.4vw,52px);margin-bottom:var(--space-8)">Account settings</h1>
+
+  <div style="display:grid;grid-template-columns:{{ apptCols }};gap:var(--space-8);align-items:start">
+    <div style="display:grid;gap:var(--space-8);min-width:0">
+      <section>
+        <h3 style="margin-bottom:var(--space-4)">Your details</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3);max-width:700px">
+          <div class="field"><label>Full name</label><input class="input" value="{{ setName }}" onChange="{{ onSetName }}"></div>
+          <div class="field"><label>Email address</label><input class="input" value="{{ setEmail }}" onChange="{{ onSetEmail }}">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">This is where all your Curalis emails are sent.</p>
+          </div>
+          <div class="field"><label>Phone number</label><input class="input" type="tel" placeholder="+91 98450 22117"></div>
+          <sc-for list="{{ extraDetailFields }}" as="f" hint-placeholder-count="4">
+            <div class="field"><label>{{ f }}</label><input class="input"></div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ isDoctorSettings }}" hint-placeholder-val="{{ false }}">
+          <div class="card" style="padding:var(--space-4) var(--space-6);margin-top:var(--space-4);max-width:700px;gap:4px">
+            <p style="font-size:13px;margin:0">General Medicine · MBBS, MD (General Medicine) · Licence KMC-44219</p>
+            <p style="font-size:13px;margin:0;opacity:.8">30 minute consultations · Monday to Friday, 9:00 AM – 1:00 PM and 3:00 PM – 6:00 PM</p>
+            <p style="font-size:12px;opacity:.6;margin:6px 0 0">Your professional details and schedule are managed by your clinic administrator. Contact them to make changes.</p>
+          </div>
+        </sc-if>
+        <button class="btn btn-primary" style="margin-top:var(--space-4)" onClick="{{ saveSettings }}">Save changes</button>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:var(--space-3)">Time zone</h3>
+        <div class="field" style="max-width:340px"><label>Time zone</label>
+          <select class="input"><option>Asia/Kolkata (IST)</option><option>Europe/London (BST)</option><option>America/New_York (EDT)</option></select>
+        </div>
+        <p style="font-size:13px;opacity:.75;margin:var(--space-2) 0 0;max-width:56ch">{{ tzHelp }}</p>
+        <p style="font-size:13px;opacity:.6;margin:4px 0 0">Your device is currently set to Asia/Kolkata (IST).</p>
+      </section>
+
+      <sc-if value="{{ showCalendarSection }}" hint-placeholder-val="{{ true }}">
+      <section>
+        <h3 style="margin-bottom:var(--space-3)">Google Calendar</h3>
+        <div class="card" style="padding:var(--space-6);max-width:640px;gap:var(--space-2)">
+          <sc-if value="{{ calNotConnected }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <p style="font-size:14px;margin:0 0 var(--space-2);text-wrap:pretty">Connect your Google Calendar and Curalis will add each appointment automatically — and update or remove it if anything changes.</p>
+              <p style="font-size:13px;opacity:.7;margin:0 0 4px">Curalis only creates and manages the events it makes. It never reads the rest of your calendar.</p>
+              <p style="font-size:13px;opacity:.7;margin:0 0 var(--space-3)">Your appointments appear as "Consultation — Curalis Clinic". No symptoms, notes, or prescriptions are ever included.</p>
+              <button class="btn btn-primary" onClick="{{ connectCal }}">Connect Google Calendar</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ calIsConnected }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <p style="font-size:14px;margin:0">Connected as maya.okonjo@gmail.com</p>
+              <p style="font-size:13px;opacity:.7;margin:2px 0 0">Connected on 5 September 2026 · 3 appointments are synced.</p>
+              <button class="btn btn-secondary" style="margin-top:var(--space-3)" onClick="{{ disconnectCal }}">Disconnect</button>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{ isPatientSettings }}" hint-placeholder-val="{{ true }}">
+      <section>
+        <h3 style="margin-bottom:var(--space-3)">Medication reminders</h3>
+        <label class="radio"><input type="checkbox" checked="{{ remindersOn }}" onChange="{{ toggleReminders }}"><span class="dot"></span>Email me when it's time to take my medication</label>
+        <p style="font-size:13px;opacity:.7;margin:var(--space-2) 0 0;max-width:56ch">Reminders follow your prescription and are sent in your time zone. Nothing is sent between 10:00 PM and 7:00 AM.</p>
+        <sc-if value="{{ remindersOff }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px;color:var(--color-accent-800);margin:6px 0 0">Reminders are off. Your prescriptions are still visible under Prescriptions.</p>
+        </sc-if>
+      </section>
+      </sc-if>
+
+      <section>
+        <h3 style="margin-bottom:var(--space-3)">Email notifications</h3>
+        <ul style="font-size:15px;line-height:1.8;margin:0;padding-left:20px;max-width:56ch">
+          <sc-for list="{{ emailList }}" as="e" hint-placeholder-count="5"><li>{{ e }}</li></sc-for>
+        </ul>
+        <p style="font-size:12px;opacity:.6;margin:var(--space-3) 0 0;max-width:56ch;text-wrap:pretty">Appointment emails can't be switched off — they carry information you need about bookings you've made.</p>
+      </section>
+
+      <section>
+        <h3 style="margin-bottom:var(--space-4)">Password</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3);max-width:700px">
+          <div class="field"><label>Current password</label><input class="input" type="password"></div>
+          <div class="field"><label>New password</label><input class="input" type="password">
+            <p style="font-size:11px;opacity:.6;margin:5px 0 0">At least 8 characters, with one number.</p>
+          </div>
+          <div class="field"><label>Confirm new password</label><input class="input" type="password"></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:var(--space-4)" onClick="{{ updatePassword }}">Update password</button>
+      </section>
+    </div>
+
+    <aside>
+      <div class="card" style="padding:var(--space-6);gap:var(--space-2)">
+        <h4 style="margin:0">Signed in as</h4>
+        <p style="font-size:14px;margin:0">{{ setName }}</p>
+        <p style="font-size:13px;opacity:.65;margin:0">{{ roleLabel }}</p>
+        <button class="btn btn-secondary btn-block" style="margin-top:var(--space-3)" onClick="{{ nav.landing }}">Sign out</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const PATIENT = { first: 'Maya', name: 'Maya Okonjo', email: 'maya.okonjo@gmail.com', tz: 'Asia/Kolkata (IST)' };
+
+const DOCTORS = [
+  { id:'d1', name:'Dr. Anita Raghavan', last:'Raghavan', spec:'General Medicine', qual:'MBBS, MD (General Medicine)', fee:'₹600', len:'30 minute consultation', next:'Next available: Today, 4:30 PM', rank:0, accepting:true, feeN:600,
+    bio:"Anita has run the clinic's general medicine practice for fourteen years. She sees adults for everything from seasonal infection to long-term blood pressure management.",
+    days:'Monday to Friday, 9:00 AM – 1:00 PM and 3:00 PM – 6:00 PM' },
+  { id:'d2', name:'Dr. Marcus Ilesanmi', last:'Ilesanmi', spec:'Dermatology', qual:'MBBS, MD (Dermatology)', fee:'₹900', len:'20 minute consultation', next:'Next available: Wednesday, 10:00 AM', rank:2, accepting:true, feeN:900,
+    bio:'Marcus treats skin, hair and nail conditions, with a particular interest in chronic eczema and adult acne.',
+    days:'Monday, Wednesday and Friday, 10:00 AM – 2:00 PM' },
+  { id:'d3', name:'Dr. Priya Menon', last:'Menon', spec:'Cardiology', qual:'MBBS, DM (Cardiology)', fee:'₹1,400', len:'40 minute consultation', next:'Next available: Thursday, 11:20 AM', rank:3, accepting:true, feeN:1400,
+    bio:'Priya sees patients for arrhythmia, heart failure follow-up and pre-operative cardiac assessment.',
+    days:'Tuesday and Thursday, 9:00 AM – 1:00 PM' },
+  { id:'d4', name:'Dr. Tomas Hargreaves', last:'Hargreaves', spec:'Paediatrics', qual:'MBBS, DCH', fee:'₹700', len:'25 minute consultation', next:'Next available: Tomorrow, 9:20 AM', rank:1, accepting:true, feeN:700,
+    bio:'Tomas looks after children from birth to sixteen, including routine development checks and vaccination schedules.',
+    days:'Monday to Saturday, 8:30 AM – 12:30 PM' },
+  { id:'d5', name:'Dr. Sofia Almeida', last:'Almeida', spec:'Endocrinology', qual:'MBBS, MD (Endocrinology)', fee:'₹1,100', len:'30 minute consultation', next:'No slots available in the next 30 days', rank:99, accepting:true, feeN:1100,
+    bio:'Sofia manages diabetes, thyroid disease and metabolic conditions.',
+    days:'Wednesday and Saturday, 2:00 PM – 6:00 PM' },
+  { id:'d6', name:'Dr. Ravi Deshmukh', last:'Deshmukh', spec:'Orthopaedics', qual:'MBBS, MS (Orthopaedics)', fee:'₹1,000', len:'30 minute consultation', next:'Not accepting new appointments', rank:100, accepting:false, feeN:1000,
+    bio:'Ravi treats joint, spine and sports injuries.',
+    days:'Tuesday, Thursday and Saturday, 3:00 PM – 7:00 PM' }
+];
+
+const APPTS = {
+  a1:{ id:'a1', kind:'upcoming', doctor:'Dr. Anita Raghavan', last:'Raghavan', spec:'General Medicine', date:'Tuesday, 8 September 2026', short:'8 Sep 2026', time:'4:30 PM – 5:00 PM', status:'Confirmed', ref:'CUR-8F42K', fee:'₹600', note:'Confirmed', action:'View details' },
+  a2:{ id:'a2', kind:'complete', doctor:'Dr. Marcus Ilesanmi', last:'Ilesanmi', spec:'Dermatology', date:'Thursday, 14 August 2026', short:'14 Aug 2026', time:'10:20 AM – 10:40 AM', status:'Completed', ref:'CUR-6C19P', fee:'₹900', note:'Summary ready', action:'View summary' },
+  a3:{ id:'a3', kind:'awaiting', doctor:'Dr. Tomas Hargreaves', last:'Hargreaves', spec:'Paediatrics', date:'Monday, 27 July 2026', short:'27 Jul 2026', time:'9:20 AM – 9:45 AM', status:'Completed', ref:'CUR-4A87T', fee:'₹700', note:"Awaiting your doctor's notes", action:'View details' },
+  a4:{ id:'a4', kind:'cancelled', doctor:'Dr. Priya Menon', last:'Menon', spec:'Cardiology', date:'Friday, 3 July 2026', short:'3 Jul 2026', time:'11:20 AM – 12:00 PM', status:'Cancelled by the clinic', ref:'CUR-2B55M', fee:'₹1,400', note:'Dr. Menon was unavailable on this date', action:'View details' }
+};
+
+const DOSES = [
+  { time:'8:00 AM', name:'Amoxicillin', dose:'500 mg', instr:'after food', status:'Reminder sent' },
+  { time:'2:00 PM', name:'Amoxicillin', dose:'500 mg', instr:'after food', status:'Reminder sent' },
+  { time:'8:00 PM', name:'Amoxicillin', dose:'500 mg', instr:'after food', status:'Reminder scheduled' },
+  { time:'10:00 PM', name:'Cetirizine', dose:'10 mg', instr:'before sleeping', status:'Reminder scheduled' }
+];
+
+const FREQ_TIMES = {
+  'Once a day':'8:00 AM', 'Twice a day':'8:00 AM, 8:00 PM', 'Three times a day':'8:00 AM, 2:00 PM, 8:00 PM',
+  'Four times a day':'7:00 AM, 12:00 PM, 5:00 PM, 9:00 PM', 'At bedtime':'10:00 PM', 'As needed':'—'
+};
+const TIMES_PER_DAY = { 'Once a day':1, 'Twice a day':2, 'Three times a day':3, 'Four times a day':4, 'At bedtime':1, 'As needed':0 };
+
+const SCHEDULE = [
+  { start:'9:00 AM', end:'9:30 AM', patient:'Leela Narayan', demo:'62 · Female', urgency:'Low', complaint:'Routine blood pressure review, no new symptoms.', visitKind:'Returning patient', status:'Completed' },
+  { start:'9:30 AM', end:'10:00 AM', patient:'Arjun Pillai', demo:'28 · Male', urgency:'Low', complaint:'Recurring headaches in the afternoons for two weeks.', visitKind:'First visit', status:'Completed' },
+  { start:'10:00 AM', end:'10:30 AM', patient:'Rohan Bhatt', demo:'34 · Male', urgency:'Medium', complaint:'Eight days of dry cough with evening fever, mild asthma in background.', visitKind:'Returning patient', status:'In progress' },
+  { start:'10:30 AM', end:'11:00 AM', patient:'Sana Qureshi', demo:'41 · Female', urgency:'High', complaint:'Sharp abdominal pain since last night, unable to keep food down.', visitKind:'First visit', status:'Upcoming' },
+  { start:'11:30 AM', end:'12:00 PM', patient:'Daniel Okafor', demo:'55 · Male', urgency:'Medium', complaint:'Summary preparing', visitKind:'Returning patient', status:'Upcoming' },
+  { start:'3:00 PM', end:'3:30 PM', patient:'Meera Iyer', demo:'19 · Female', urgency:'Low', complaint:'Follow-up on iron supplementation, feeling better.', visitKind:'Returning patient', status:'Upcoming' },
+  { start:'4:30 PM', end:'5:00 PM', patient:'Maya Okonjo', demo:'31 · Female', urgency:'Low', complaint:'Persistent tiredness and disturbed sleep over the last month.', visitKind:'First visit', status:'Upcoming' }
+];
+
+const NOTIFS = [
+  { type:'Booking confirmation', subject:'Your appointment with Dr. Anita Raghavan — Tue 8 Sep, 4:30 PM', email:'maya.okonjo@gmail.com', who:'Maya Okonjo · Patient', status:'Sent', timing:'Sent 5 Sep, 9:12 AM', attempts:'1 attempt', reason:'' },
+  { type:'Medication reminder', subject:'Time for your Amoxicillin 500 mg', email:'rohan.bhatt@example.com', who:'Rohan Bhatt · Patient', status:'Failed', timing:'Last attempt 5 Sep, 8:04 AM', attempts:'5 attempts', reason:"The recipient's email address was rejected." },
+  { type:'Visit summary ready', subject:'Your visit summary from Dr. Marcus Ilesanmi', email:'leela.n@example.com', who:'Leela Narayan · Patient', status:'Retrying', timing:'Next attempt 5 Sep, 10:20 AM', attempts:'3 attempts', reason:'The email service is rate-limiting us. This will retry automatically.' },
+  { type:'Leave cancellation', subject:'Your appointment on 12 Sep has been cancelled', email:'d.okafor@example.com', who:'Daniel Okafor · Patient', status:'Sent', timing:'Sent 4 Sep, 6:41 PM', attempts:'1 attempt', reason:'' },
+  { type:'Appointment reminder', subject:'Tomorrow: Dr. Tomas Hargreaves, 9:20 AM', email:'sana.q@example.com', who:'Sana Qureshi · Patient', status:'Waiting', timing:'Queued 5 Sep, 9:00 AM', attempts:'0 attempts', reason:'' },
+  { type:'Cancellation', subject:'Appointment cancelled — Fri 3 Jul, 11:20 AM', email:'priya.menon@curalis.clinic', who:'Dr. Priya Menon · Doctor', status:'Failed', timing:'Last attempt 3 Sep, 2:15 PM', attempts:'5 attempts', reason:'The email service was unavailable. Curalis stopped after 5 attempts.' },
+  { type:'Reschedule', subject:'Your appointment has moved to Tue 8 Sep, 4:30 PM', email:'maya.okonjo@gmail.com', who:'Maya Okonjo · Patient', status:'Failed', timing:'Last attempt 2 Sep, 11:02 AM', attempts:'5 attempts', reason:'The email service rejected the message.' }
+];
+
+const DAYNAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const TODAY = new Date(2026, 8, 5);
+
+function fmtLong(d) { return DAYNAMES[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
+
+class Component extends DCLogic {
+  state = {
+    route:'landing', role:'patient', authMode:'signin', showPw:false, email:'', password:'', authError:'',
+    apptFilter:'All', docQuery:'', docSpec:'All specialisations', docAvail:'Any time', docSort:'Soonest available',
+    bookDoctor:'d1', bookStep:1, bookDateIdx:3, bookSlot:null, hold:600, holdExpired:false,
+    symptoms:'', severity:5, symptomError:false, apptId:'a1', cancelOpen:false, cancelReason:"I'm no longer available", rescheduleOpen:false,
+    remindersOn:true, calConnected:false, docDayOffset:0, consultPhase:1, consultId:'p1',
+    meds:[{ name:'Amoxicillin', dose:'500 mg', freq:'Three times a day', days:'5', instr:'after food' }],
+    notes:'', notesError:false, notifStatus:'All', notifType:'All', adminFilter:'All', adminQuery:'', adminDocId:'d1',
+    mdName:'Anita Raghavan', mdEmail:'anita.raghavan@curalis.clinic', mdSpec:'General Medicine',
+    accepting:true, workDays:['Monday','Tuesday','Wednesday','Thursday','Friday'],
+    leaveStage:'form', deactivateOpen:false,
+    completeOpen:false, toast:null, settingsRole:'patient'
+  };
+
+  componentDidMount() {
+    this._t = setInterval(() => {
+      if (this.state.route === 'book' && this.state.bookStep === 2 && !this.state.holdExpired) {
+        this.setState(s => (s.hold <= 1 ? { hold:0, holdExpired:true } : { hold:s.hold - 1 }));
+      }
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._t); if (this._toast) clearTimeout(this._toast); }
+
+  go = (route, extra) => (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    this.setState(Object.assign({ route }, extra || {}));
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  };
+  set = (k) => (e) => this.setState({ [k]: e && e.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e });
+  pick = (k, v) => () => this.setState({ [k]: v });
+  flash = (msg) => {
+    this.setState({ toast: msg });
+    if (this._toast) clearTimeout(this._toast);
+    this._toast = setTimeout(() => this.setState({ toast: null }), 2600);
+  };
+
+  setMed = (i, k) => (e) => {
+    const v = e.target.value;
+    this.setState(st => ({ meds: st.meds.map((m, j) => j === i ? Object.assign({}, m, { [k]: v }) : m) }));
+  };
+
+  navFor(role) {
+    const mk = (label, route) => ({ label, go: this.go(route), cur: this.state.route === route ? 'page' : undefined });
+    if (role === 'doctor') return [mk('Dashboard','doctor'), mk('Settings','settings')];
+    if (role === 'admin') return [mk('Dashboard','admin'), mk('Notifications','notifications'), mk('Settings','settings')];
+    return [mk('Dashboard','app'), mk('Find a doctor','doctors'), mk('Prescriptions','rx'), mk('Settings','settings')];
+  }
+
+  bookDates() {
+    const out = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate() + i);
+      let reason = null;
+      if (d.getDay() === 0 || d.getDay() === 6) reason = 'Not consulting';
+      else if (i === 5) reason = 'On leave';
+      else if (i === 7) reason = 'Fully booked';
+      out.push({ i, d, reason, day: DAYNAMES[d.getDay()].slice(0,3), num: d.getDate(), mon: MONTHS[d.getMonth()].slice(0,3), long: fmtLong(d) });
+    }
+    return out;
+  }
+
+  slotsFor(idx) {
+    const base = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM'];
+    const ends = ['9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM'];
+    return base.map((s, i) => ({ start:s, end:ends[i], free: (i * 7 + idx * 5) % 3 !== 0 })).filter(s => s.free);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const nav = {
+      landing: this.go('landing'), home: this.go(s.role === 'doctor' ? 'doctor' : s.role === 'admin' ? 'admin' : 'app'),
+      app: this.go('app'), doctors: this.go('doctors'), rx: this.go('rx'), settings: this.go('settings'),
+      doctor: this.go('doctor'), admin: this.go('admin'), notifications: this.go('notifications')
+    };
+    const appt = APPTS[s.apptId] || APPTS.a1;
+    const doctor = DOCTORS.find(d => d.id === s.bookDoctor) || DOCTORS[0];
+    const dates = this.bookDates();
+    const activeDate = dates[s.bookDateIdx] || dates[0];
+    const slots = activeDate.reason ? [] : this.slotsFor(s.bookDateIdx);
+
+    const filterList = ['All','Upcoming','Completed','Cancelled'];
+    const all = Object.keys(APPTS).map(k => APPTS[k]);
+    const wanted = (a) => s.apptFilter === 'All' ? true
+      : s.apptFilter === 'Upcoming' ? a.kind === 'upcoming'
+      : s.apptFilter === 'Completed' ? (a.kind === 'complete' || a.kind === 'awaiting')
+      : a.kind === 'cancelled';
+    const withOpen = (a) => Object.assign({}, a, { open: this.go('appt', { apptId:a.id, cancelOpen:false, rescheduleOpen:false }) });
+    const upcomingList = all.filter(a => a.kind === 'upcoming' && wanted(a)).map(withOpen);
+    const pastList = all.filter(a => a.kind !== 'upcoming' && wanted(a)).map(withOpen);
+
+    const secs = s.hold % 60;
+    const holdText = Math.floor(s.hold / 60) + ':' + (secs < 10 ? '0' : '') + secs;
+
+    const q = s.docQuery.trim().toLowerCase();
+    let fd = DOCTORS.filter(d =>
+      (!q || d.name.toLowerCase().indexOf(q) >= 0 || d.spec.toLowerCase().indexOf(q) >= 0) &&
+      (s.docSpec === 'All specialisations' || d.spec === s.docSpec) &&
+      (s.docAvail === 'Any time' || (s.docAvail === 'Available today' ? d.rank === 0 : d.rank <= 3))
+    );
+    fd = fd.slice().sort((a, b) => s.docSort === 'Name (A–Z)' ? a.name.localeCompare(b.name)
+      : s.docSort === 'Consultation fee' ? a.feeN - b.feeN : a.rank - b.rank);
+    fd = fd.map(d => Object.assign({}, d, {
+      initials: d.name.replace('Dr. ', '').split(' ').map(w => w[0]).join(''),
+      disabled: !d.accepting,
+      availColor: d.rank > 90 ? 'color-mix(in srgb, var(--color-text) 55%, transparent)' : 'var(--color-accent-2-700)',
+      book: this.go('book', { bookDoctor: d.id, bookStep:1, bookSlot:null, hold:600, holdExpired:false })
+    }));
+
+    const dow = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate() + s.docDayOffset).getDay();
+    const sched = (dow === 0) ? [] : SCHEDULE.map(a => Object.assign({}, a, {
+      urgTag: a.urgency === 'High' ? 'tag-accent' : a.urgency === 'Medium' ? 'tag-accent-2' : 'tag-neutral',
+      urgColor: a.urgency === 'High' ? 'var(--color-accent-500)' : a.urgency === 'Medium' ? 'var(--color-accent-2-500)' : 'var(--color-neutral-300)',
+      open: this.go('consult', { consultPhase:1 })
+    }));
+
+    const aq = s.adminQuery.trim().toLowerCase();
+    const ad = DOCTORS.filter(d =>
+      (!aq || d.name.toLowerCase().indexOf(aq) >= 0 || d.spec.toLowerCase().indexOf(aq) >= 0) &&
+      (s.adminFilter === 'All'
+        || (s.adminFilter === 'Accepting appointments' && d.accepting)
+        || (s.adminFilter === 'Not accepting' && !d.accepting)
+        || (s.adminFilter === 'On leave today' && d.id === 'd5'))
+    ).map(d => ({
+      name: d.name, spec: d.spec, qual: d.qual, len: d.len,
+      shortDays: d.days.split(',')[0],
+      booked: d.id === 'd6' ? 0 : 6 + (d.name.length % 9),
+      statusLabel: d.id === 'd5' ? 'On leave until 9 Sep' : d.accepting ? 'Accepting' : 'Not accepting',
+      tag: d.id === 'd5' ? 'tag-accent' : d.accepting ? 'tag-accent-2' : 'tag-neutral',
+      warn: d.id === 'd6' ? 'No working hours set — this doctor cannot be booked.' : '',
+      manage: this.go('adminDoctor', { adminDocId: d.id })
+    }));
+
+    const nf = NOTIFS.filter(n =>
+      (s.notifStatus === 'All' || n.status === s.notifStatus) &&
+      (s.notifType === 'All' || n.type === s.notifType)
+    ).map(n => Object.assign({}, n, {
+      tag: n.status === 'Failed' ? 'tag-accent' : n.status === 'Sent' ? 'tag-accent-2' : 'tag-neutral',
+      color: n.status === 'Failed' ? 'var(--color-accent-500)' : n.status === 'Sent' ? 'var(--color-accent-2-400)' : 'var(--color-neutral-300)',
+      canRetry: n.status === 'Failed',
+      retry: () => this.flash('Retrying — we\u2019ll email ' + n.email + ' again.')
+    }));
+
+    return {
+      nav, toast: s.toast, userInitials: s.role === 'doctor' ? 'AR' : s.role === 'admin' ? 'CA' : 'MO',
+      showNav: ['app','doctors','book','appt','rx','doctor','consult','admin','adminDoctor','notifications','settings'].indexOf(s.route) >= 0,
+      navLinks: this.navFor(s.role),
+      isLanding: s.route === 'landing', isAuth: s.route === 'auth', isDash: s.route === 'app',
+      isDoctors: s.route === 'doctors', isBook: s.route === 'book', isAppt: s.route === 'appt', isRx: s.route === 'rx',
+      isDoc: s.route === 'doctor', isConsult: s.route === 'consult', isAdmin: s.route === 'admin',
+      isAdminDoc: s.route === 'adminDoctor', isNotif: s.route === 'notifications', isSettings: s.route === 'settings',
+
+      goSignIn: this.go('auth', { authMode:'signin', authError:'' }),
+      goSignUp: this.go('auth', { authMode:'signup' }),
+      isSignIn: s.authMode === 'signin', isSignUp: s.authMode === 'signup',
+      email: s.email, password: s.password, onEmail: this.set('email'), onPassword: this.set('password'),
+      showPw: s.showPw, pwType: s.showPw ? 'text' : 'password', toggleShowPw: () => this.setState({ showPw: !s.showPw }),
+      authError: s.authError, signInLabel: 'Sign in', signUpLabel: 'Create account',
+      doSignIn: () => {
+        if (!s.email) return this.setState({ authError: 'Please enter your email address.' });
+        if (!s.password) return this.setState({ authError: 'Please enter your password.' });
+        this.setState({ authError: "That email and password combination doesn't match our records." });
+      },
+      doSignUp: () => { this.setState({ route:'app', role:'patient' }); this.flash('Welcome to Curalis.'); },
+      asPatient: this.go('app', { role:'patient', settingsRole:'patient' }),
+      asDoctor: this.go('doctor', { role:'doctor', settingsRole:'doctor' }),
+      asAdmin: this.go('admin', { role:'admin', settingsRole:'admin' }),
+
+      dashCols: 'minmax(0,1.65fr) minmax(280px,1fr)',
+      apptFilters: filterList.map(f => ({ label:f, on: s.apptFilter === f, pick: this.pick('apptFilter', f) })),
+      upcomingList, pastList, hasUpcoming: upcomingList.length > 0, hasPast: pastList.length > 0,
+      noPast: pastList.length === 0, todayDoses: DOSES,
+      openUpcoming: this.go('appt', { apptId:'a1', cancelOpen:false, rescheduleOpen:false }),
+      openReschedule: this.go('appt', { apptId:'a1', rescheduleOpen:true, cancelOpen:false }),
+      openCancel: this.go('appt', { apptId:'a1', cancelOpen:true, rescheduleOpen:false }),
+
+      // ── Page 4 — Find a doctor
+      docQuery: s.docQuery, onDocQuery: this.set('docQuery'),
+      docSpec: s.docSpec, onDocSpec: this.set('docSpec'),
+      docAvail: s.docAvail, onDocAvail: this.set('docAvail'),
+      docSort: s.docSort, onDocSort: this.set('docSort'),
+      specOptions: ['All specialisations'].concat(DOCTORS.map(d => d.spec).filter((v, i, a) => a.indexOf(v) === i)),
+      filteredDoctors: fd, noDoctors: fd.length === 0,
+      docCountLine: fd.length + (fd.length === 1 ? ' doctor matches' : ' doctors match') + ' your search.',
+      clearDocFilters: () => this.setState({ docQuery:'', docSpec:'All specialisations', docAvail:'Any time', docSort:'Soonest available' }),
+
+      // ── Page 5 — Book
+      bookCols: 'minmax(0,1.6fr) minmax(280px,1fr)',
+      step1: s.bookStep === 1, step2: s.bookStep === 2, step3: s.bookStep === 3,
+      steps: ['Choose a time','Symptom details','Confirm'].map((label, i) => {
+        const on = s.bookStep === i + 1, done = s.bookStep > i + 1;
+        return { n: i + 1, label,
+          bg: on ? 'var(--color-accent)' : done ? 'var(--color-accent-2-200)' : 'var(--color-surface)',
+          fg: on ? 'var(--color-bg)' : done ? 'var(--color-accent-2-900)' : 'color-mix(in srgb, var(--color-text) 55%, transparent)',
+          dot: on ? 'var(--color-accent-800)' : done ? 'var(--color-accent-2-600)' : 'var(--color-neutral-300)',
+          dotFg: on || done ? 'var(--color-bg)' : 'var(--color-neutral-700)' };
+      }),
+      bookHeading: 'Choose a time with ' + doctor.name,
+      patientTz: PATIENT.tz, patientEmail: PATIENT.email,
+      docName: doctor.name, docSpecName: doctor.spec, docQual: doctor.qual, docBio: doctor.bio,
+      docFee: doctor.fee, docLen: doctor.len, docDays: doctor.days,
+      docInitials: doctor.name.replace('Dr. ', '').split(' ').map(w => w[0]).join(''),
+      dateChips: dates.map(d => ({
+        day: d.day, num: d.num, mon: d.mon, reason: d.reason || 'Available',
+        disabled: !!d.reason, opacity: d.reason ? 0.4 : 1,
+        bg: s.bookDateIdx === d.i ? 'var(--color-accent)' : 'var(--color-surface)',
+        fg: s.bookDateIdx === d.i ? 'var(--color-bg)' : 'var(--color-text)',
+        border: s.bookDateIdx === d.i ? 'var(--color-accent)' : 'var(--color-divider)',
+        pick: () => this.setState({ bookDateIdx: d.i, bookSlot: null })
+      })),
+      activeDateLong: activeDate.long,
+      hasSlots: slots.length > 0, noSlots: slots.length === 0,
+      noSlotsTitle: activeDate.reason === 'On leave' ? 'Dr. ' + doctor.last + ' is on leave on this date.'
+        : activeDate.reason === 'Not consulting' ? "Dr. " + doctor.last + " doesn't consult on this day."
+        : 'Every slot on this date is booked.',
+      noSlotsBody: activeDate.reason === 'On leave' ? 'Pick another date, or see other doctors in ' + doctor.spec + '.'
+        : activeDate.reason === 'Not consulting' ? 'Choose one of their consulting days above.'
+        : 'Try another date — the next opening is ' + (dates[8] ? dates[8].long : 'next week') + '.',
+      slotChips: slots.map(sl => ({
+        label: sl.start + ' – ' + sl.end,
+        bg: s.bookSlot === sl.start ? 'var(--color-accent)' : 'transparent',
+        fg: s.bookSlot === sl.start ? 'var(--color-bg)' : 'var(--color-text)',
+        border: s.bookSlot === sl.start ? 'var(--color-accent)' : 'var(--color-divider)',
+        pick: () => this.setState({ bookSlot: sl.start })
+      })),
+      noSlotPicked: !s.bookSlot,
+      refreshSlots: () => this.flash('Availability refreshed.'),
+      toStep2: () => this.setState({ bookStep:2, hold:600, holdExpired:false }),
+      backToStep1: () => this.setState({ bookStep:1, bookSlot:null, holdExpired:false, hold:600 }),
+      retryHold: () => this.setState({ hold:600, holdExpired:false }),
+      holdExpired: s.holdExpired,
+      symptoms: s.symptoms, onSymptoms: this.set('symptoms'), symptomError: s.symptomError,
+      severity: s.severity, onSeverity: this.set('severity'),
+      confirmBooking: () => {
+        if (!s.symptoms.trim()) return this.setState({ symptomError: true });
+        this.setState({ bookStep:3, symptomError:false });
+        if (typeof window !== 'undefined') window.scrollTo(0, 0);
+      },
+      showHold: s.bookStep === 2 && !s.holdExpired,
+      holdBg: s.hold < 120 ? 'var(--color-accent-700)' : 'var(--color-accent-2-700)',
+      holdFg: s.hold < 120 ? 'var(--color-accent-100)' : 'var(--color-accent-2-100)',
+      holdNote: s.hold < 120 ? 'Less than 2 minutes left. If the timer runs out, the slot returns to the schedule.'
+        : "We're holding this slot for you. If the timer runs out, the slot returns to the schedule.",
+      heldWhen: activeDate.long + ' · ' + (s.bookSlot || '—'),
+      confirmRows: [
+        { k:'Doctor', v: doctor.name }, { k:'Specialisation', v: doctor.spec },
+        { k:'Date', v: activeDate.long }, { k:'Time', v: (s.bookSlot || '4:30 PM') + ' · ' + PATIENT.tz },
+        { k:'Consultation fee', v: doctor.fee }, { k:'Booking reference', v:'CUR-9D31L' },
+        { k:'Clinic address', v:'Curalis Clinic, 24 Brookfield Road, Bengaluru 560071' }
+      ],
+      nextSteps: [
+        { n:1, t:'A confirmation email is on its way', b:'It includes a calendar file you can open in any calendar app.' },
+        { n:2, t:'Your doctor is being briefed', b:"We're preparing a summary of what you've told us for Dr. " + doctor.last + ' to read before you arrive.' },
+        { n:3, t:"We'll remind you", b:'Once the day before, and again an hour ahead.' },
+        { n:4, t:'After your visit', b:"You'll get a plain-language summary and, if you're prescribed anything, a reminder schedule." }
+      ],
+      connectCal: () => { this.setState({ calConnected:true }); this.flash('Google Calendar connected.'); },
+
+      // ── Page 6 — Appointment details
+      apptCols: 'minmax(0,1.7fr) minmax(260px,1fr)',
+      aDoctor: appt.doctor, aSpec: appt.spec, aStatus: appt.status, aDate: appt.date, aTime: appt.time,
+      aStatusTag: appt.kind === 'upcoming' ? 'tag-accent-2' : appt.kind === 'cancelled' ? 'tag-accent' : 'tag-neutral',
+      aUpcoming: appt.kind === 'upcoming', aCancelled: appt.kind === 'cancelled',
+      aComplete: appt.kind === 'complete', aAwaiting: appt.kind === 'awaiting',
+      aMovedFrom: appt.id === 'a1' ? 'Moved from Thursday, 3 September 2026 at 11:00 AM.' : '',
+      apptRows: [
+        { k:'Date', v: appt.date }, { k:'Time', v: appt.time + ' · ' + PATIENT.tz },
+        { k:'Status', v: appt.status }, { k:'Booking reference', v: appt.ref },
+        { k:'Consultation fee', v: appt.fee },
+        { k:'Clinic address', v:'Curalis Clinic, 24 Brookfield Road, Bengaluru 560071' }
+      ],
+      calLine: s.calConnected ? 'Added to your Google Calendar.' : 'Not synced — connect your calendar in Settings.',
+      intake: [
+        { k:"What you're experiencing", v:'A dry cough that started about a week ago, now with a sore throat and a low fever in the evenings. Sleeping badly because of the coughing.' },
+        { k:"How long it's been going on", v:'8 days' },
+        { k:'Severity', v:'6 out of 10' },
+        { k:'Ongoing conditions', v:'Mild asthma, diagnosed 2019' },
+        { k:'Current medication', v:'Salbutamol inhaler as needed. Paracetamol 500 mg most evenings this week.' },
+        { k:'Allergies', v:'Penicillin — rash' },
+        { k:'Additional notes', v:'I travel for work on the 12th and would rather have this settled before then.' }
+      ],
+      summaryMeds: [
+        { name:'Mometasone cream', dose:'0.1%', freq:'Twice a day', times:'8:00 AM, 8:00 PM', duration:'For 7 days', instr:'Apply thinly to the affected area' },
+        { name:'Cetirizine', dose:'10 mg', freq:'At bedtime', times:'10:00 PM', duration:'For 10 days', instr:'Before sleeping' }
+      ],
+      editIntake: () => this.flash('Symptom details unlocked for editing.'),
+      openResched: () => this.setState({ rescheduleOpen:true }),
+      openCancelDlg: () => this.setState({ cancelOpen:true }),
+      closeDialogs: () => this.setState({ rescheduleOpen:false, cancelOpen:false }),
+      rescheduleOpen: s.rescheduleOpen, cancelOpen: s.cancelOpen,
+      confirmResched: () => { this.setState({ rescheduleOpen:false }); this.flash('Appointment moved. A new confirmation is on its way.'); },
+      cancelQuestion: 'Cancel your appointment with Dr. ' + appt.last + ' on ' + appt.short + ' at ' + appt.time.split(' – ')[0] + '?',
+      cancelReasons: ["I'm no longer available","I'm feeling better",'I need a different doctor','Other']
+        .map(r => ({ label:r, on: s.cancelReason === r, pick: this.pick('cancelReason', r) })),
+      cancelOther: s.cancelReason === 'Other',
+      confirmCancel: () => { this.setState({ cancelOpen:false, route:'app' }); this.flash('Appointment cancelled. The slot has been released.'); },
+
+      // ── Page 7 — Prescriptions
+      prescriptions: [
+        { group:'Active', doctor:'Dr. Anita Raghavan', spec:'General Medicine', issued:'19 August 2026', status:'Active', tag:'tag-accent-2',
+          viewVisit: this.go('appt', { apptId:'a2' }),
+          meds:[
+            { name:'Amoxicillin', dose:'500 mg', freq:'Three times a day', times:'8:00 AM, 2:00 PM, 8:00 PM', duration:'For 5 days', instr:'after food', progress:'Day 3 of 5 · Finishes on 6 September 2026' },
+            { name:'Cetirizine', dose:'10 mg', freq:'At bedtime', times:'10:00 PM', duration:'For 10 days', instr:'before sleeping', progress:'Day 3 of 10 · Finishes on 11 September 2026' }
+          ] },
+        { group:'Past', doctor:'Dr. Marcus Ilesanmi', spec:'Dermatology', issued:'14 August 2026', status:'Completed', tag:'tag-neutral',
+          viewVisit: this.go('appt', { apptId:'a2' }),
+          meds:[
+            { name:'Mometasone cream', dose:'0.1%', freq:'Twice a day', times:'8:00 AM, 8:00 PM', duration:'For 7 days', instr:'apply thinly', progress:'Course finished on 21 August 2026' },
+            { name:'Ibuprofen', dose:'400 mg', freq:'As needed', times:'—', duration:'Up to 5 days', instr:'with water', progress:'Take when required — no reminders are scheduled for this.' }
+          ] }
+      ],
+      remindersOn: s.remindersOn, remindersOff: !s.remindersOn,
+      reminderState: s.remindersOn ? 'On' : 'Off',
+      toggleReminders: () => {
+        const next = !s.remindersOn;
+        this.setState({ remindersOn: next });
+        if (!next) this.flash('Medication reminders turned off. You can turn them back on any time.');
+      },
+      nextReminders: [
+        { name:'Amoxicillin', dose:'500 mg', when:'Today, 8:00 PM' },
+        { name:'Cetirizine', dose:'10 mg', when:'Today, 10:00 PM' },
+        { name:'Amoxicillin', dose:'500 mg', when:'Tomorrow, 8:00 AM' },
+        { name:'Amoxicillin', dose:'500 mg', when:'Tomorrow, 2:00 PM' }
+      ],
+
+      // ── Page 8 — Doctor dashboard
+      docDateLine: fmtLong(new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate() + s.docDayOffset)),
+      docStats: [
+        { n:'7', label:'Appointments today', color:'var(--color-text)' },
+        { n:'3', label:'Completed today', color:'var(--color-accent-2-700)' },
+        { n:'4', label:'Remaining today', color:'var(--color-accent-700)' },
+        { n:'2', label:'Visits awaiting notes', color:'var(--color-accent-700)' }
+      ],
+      prevDay: () => this.setState({ docDayOffset: s.docDayOffset - 1 }),
+      nextDay: () => this.setState({ docDayOffset: s.docDayOffset + 1 }),
+      todayDay: () => this.setState({ docDayOffset: 0 }),
+      docSchedule: sched, docNoAppts: sched.length === 0,
+      docEmptyLine: "You don't consult on Sunday.",
+      awaitingNotes: [
+        { patient:'Leela Narayan', date:'3 September 2026', ago:'2 days ago', open: this.go('consult', { consultPhase:2 }) },
+        { patient:'Daniel Okafor', date:'2 September 2026', ago:'3 days ago', open: this.go('consult', { consultPhase:2 }) }
+      ],
+
+      // ── Page 9 — Consultation
+      phase1: s.consultPhase === 1, phase2: s.consultPhase === 2, phase3: s.consultPhase === 3,
+      phases: ['Briefing','Record the consultation','Patient summary'].map((label, i) => {
+        const on = s.consultPhase === i + 1, done = s.consultPhase > i + 1;
+        return { n: i + 1, label, pick: this.pick('consultPhase', i + 1),
+          bg: on ? 'var(--color-accent)' : done ? 'var(--color-accent-2-200)' : 'var(--color-surface)',
+          fg: on ? 'var(--color-bg)' : done ? 'var(--color-accent-2-900)' : 'color-mix(in srgb, var(--color-text) 55%, transparent)',
+          dot: on ? 'var(--color-accent-800)' : done ? 'var(--color-accent-2-600)' : 'var(--color-neutral-300)',
+          dotFg: on || done ? 'var(--color-bg)' : 'var(--color-neutral-700)' };
+      }),
+      priorVisits: [
+        { date:'2 April 2026', diagnosis:'Acute bronchitis', meds:'Azithromycin, Salbutamol', open: this.go('consult', { consultPhase:3 }) },
+        { date:'18 November 2025', diagnosis:'Asthma review — stable', meds:'Salbutamol', open: this.go('consult', { consultPhase:3 }) }
+      ],
+      toPhase2: () => this.setState({ consultPhase:2 }),
+      openDocCancel: () => this.flash('Cancel this appointment with Rohan Bhatt on 5 Sep at 10:00 AM?'),
+      notes: s.notes, onNotes: this.set('notes'), notesError: s.notesError,
+      freqOptions: ['Once a day','Twice a day','Three times a day','Four times a day','At bedtime','As needed'],
+      medRows: s.meds.map((m, i) => {
+        const times = FREQ_TIMES[m.freq] || '—';
+        const total = m.freq === 'As needed' ? 0 : (TIMES_PER_DAY[m.freq] || 1) * (parseInt(m.days, 10) || 0);
+        return Object.assign({}, m, { times,
+          preview: m.freq === 'As needed' ? 'No reminders are scheduled for as-needed medication.'
+            : 'Rohan will be reminded at ' + times + ' in their time zone (Asia/Kolkata) for ' + (m.days || 0) + ' days — ' + total + ' reminders in total.',
+          onName: this.setMed(i, 'name'), onDose: this.setMed(i, 'dose'), onFreq: this.setMed(i, 'freq'),
+          onDays: this.setMed(i, 'days'), onInstr: this.setMed(i, 'instr'),
+          remove: () => this.setState({ meds: s.meds.filter((x, j) => j !== i) }) });
+      }),
+      noMeds: s.meds.length === 0,
+      addMed: () => this.setState({ meds: s.meds.concat([{ name:'', dose:'', freq:'Once a day', days:'5', instr:'' }]) }),
+      askComplete: () => s.notes.trim() ? this.setState({ completeOpen:true, notesError:false }) : this.setState({ notesError:true }),
+      closeComplete: () => this.setState({ completeOpen:false }),
+      doComplete: () => { this.setState({ completeOpen:false, consultPhase:3 }); this.flash("Visit completed. Rohan's summary is being prepared."); },
+      saveDraft: () => this.flash('Draft saved. The patient has not been notified.'),
+      approveSummary: () => { this.setState({ route:'doctor' }); this.flash('Summary sent to Rohan.'); },
+      regenSummary: () => this.flash('Regenerating the plain-language summary…'),
+      completeOpen: s.completeOpen,
+
+      // ── Page 10 — Admin dashboard
+      adminStats: [
+        { n:'6', label:'Doctors on the roster', color:'var(--color-text)' },
+        { n:'4', label:'Consulting today', color:'var(--color-text)' },
+        { n:'1', label:'On leave today', color:'var(--color-accent-700)' },
+        { n:'28', label:'Appointments today', color:'var(--color-text)' },
+        { n:'163', label:'This week', color:'var(--color-text)' },
+        { n:'9', label:'Cancellations this week', color:'var(--color-accent-700)' },
+        { n:'3', label:'Notifications needing attention', color:'var(--color-accent-700)' }
+      ],
+      attention: [
+        { text:'3 email notifications have failed to send.', label:'Review', act: this.go('notifications', { notifStatus:'Failed' }) },
+        { text:'Dr. Deshmukh has no working hours configured and cannot be booked.', label:'Set working hours', act: this.go('adminDoctor', { adminDocId:'d6' }) },
+        { text:'4 appointments were cancelled by clinic leave this week.', label:'View', act: this.go('notifications', { notifType:'Leave cancellation' }) }
+      ],
+      adminQuery: s.adminQuery, onAdminQuery: this.set('adminQuery'),
+      adminFilter: s.adminFilter, onAdminFilter: this.set('adminFilter'),
+      adminDoctors: ad, addDoctor: this.go('adminDoctor', { adminDocId:'new' }),
+      clinicToday: [
+        { name:'Dr. Anita Raghavan', count:7, first:'9:00 AM', last:'5:30 PM' },
+        { name:'Dr. Tomas Hargreaves', count:9, first:'8:30 AM', last:'12:10 PM' },
+        { name:'Dr. Marcus Ilesanmi', count:6, first:'10:00 AM', last:'1:40 PM' },
+        { name:'Dr. Sofia Almeida', count:6, first:'2:00 PM', last:'5:30 PM' }
+      ],
+
+      // ── Page 11 — Add / manage a doctor
+      isNewDoctor: s.adminDocId === 'new',
+      manageHeading: s.adminDocId === 'new' ? 'Add a doctor' : 'Dr. Anita Raghavan',
+      manageSub: s.adminDocId === 'new' ? 'Create the account, set the schedule, and the doctor can be booked immediately.' : 'General Medicine · MBBS, MD (General Medicine)',
+      mdName: s.mdName, onMdName: this.set('mdName'),
+      mdEmail: s.mdEmail, onMdEmail: this.set('mdEmail'),
+      mdSpec: s.mdSpec, onMdSpec: this.set('mdSpec'),
+      noop: () => {},
+      accepting: s.accepting, acceptingLabel: s.accepting ? 'Accepting appointments' : 'Not accepting appointments',
+      toggleAccepting: () => this.setState({ accepting: !s.accepting }),
+      workingHours: DAYNAMES.slice(1, 7).concat([DAYNAMES[0]]).map(day => {
+        const on = s.workDays.indexOf(day) >= 0;
+        return { day, on,
+          preview: on ? '9:00 AM – 1:00 PM, 3:00 PM – 6:00 PM — 14 bookable slots' : 'Not consulting',
+          toggle: () => this.setState({ workDays: on ? s.workDays.filter(d => d !== day) : s.workDays.concat([day]) }),
+          add: () => this.flash('Another period added to ' + day + '.') };
+      }),
+      affected: ['Sana Qureshi — 18 September 2026, 6:30 PM', 'Arjun Pillai — 22 September 2026, 8:30 AM', 'Meera Iyer — 25 September 2026, 6:30 PM'],
+      leaveForm: s.leaveStage === 'form', leaveConflict: s.leaveStage === 'conflict',
+      checkConflicts: () => this.setState({ leaveStage:'conflict' }),
+      backToLeaveForm: () => this.setState({ leaveStage:'form' }),
+      confirmLeave: () => { this.setState({ leaveStage:'form' }); this.flash('Leave recorded. 4 patients have been notified and their calendar entries removed.'); },
+      removeLeave: () => this.flash('Leave period removed.'),
+      conflicts: [
+        { name:'Rohan Bhatt', email:'rohan.bhatt@example.com', when:'21 Sep, 10:00 AM', ref:'CUR-7K90R' },
+        { name:'Leela Narayan', email:'leela.n@example.com', when:'21 Sep, 11:30 AM', ref:'CUR-3H12V' },
+        { name:'Sana Qureshi', email:'sana.q@example.com', when:'22 Sep, 9:30 AM', ref:'CUR-5T77B' },
+        { name:'Daniel Okafor', email:'d.okafor@example.com', when:'23 Sep, 4:00 PM', ref:'CUR-1Z04W' }
+      ],
+      docUpcoming: [
+        { date:'8 Sep 2026', time:'4:30 PM', patient:'Maya Okonjo', status:'Confirmed' },
+        { date:'9 Sep 2026', time:'9:30 AM', patient:'Arjun Pillai', status:'Confirmed' },
+        { date:'9 Sep 2026', time:'11:00 AM', patient:'Sana Qureshi', status:'Confirmed' },
+        { date:'10 Sep 2026', time:'3:00 PM', patient:'Meera Iyer', status:'Confirmed' }
+      ],
+      saveDoctor: () => this.flash('Changes saved.'),
+      openDeactivate: () => this.setState({ deactivateOpen:true }),
+      closeDeactivate: () => this.setState({ deactivateOpen:false }),
+      deactivateOpen: s.deactivateOpen,
+      doDeactivate: () => { this.setState({ deactivateOpen:false, route:'admin' }); this.flash('Account deactivated.'); },
+
+      // ── Page 12 — Notification log
+      notifStats: [
+        { n:'412', label:'Sent in the last 24 hours', color:'var(--color-text)' },
+        { n:'7', label:'Waiting to send', color:'var(--color-text)' },
+        { n:'2', label:'Currently retrying', color:'var(--color-accent-700)' },
+        { n:'3', label:'Failed and needing attention', color:'var(--color-accent-700)' }
+      ],
+      notifStatus: s.notifStatus, onNotifStatus: this.set('notifStatus'),
+      notifType: s.notifType, onNotifType: this.set('notifType'),
+      notifTypes: ['All','Booking confirmation','Appointment reminder','Cancellation','Reschedule','Leave cancellation','Visit summary ready','Medication reminder'],
+      notifications: nf, noNotifs: nf.length === 0,
+      clearNotifFilters: () => this.setState({ notifStatus:'All', notifType:'All' }),
+
+      // ── Page 13 — Account settings
+      isPatientSettings: s.role === 'patient', isDoctorSettings: s.role === 'doctor',
+      showCalendarSection: s.role !== 'admin',
+      roleLabel: s.role === 'doctor' ? 'Doctor · General Medicine' : s.role === 'admin' ? 'Clinic administrator' : 'Patient',
+      setName: s.role === 'doctor' ? 'Anita Raghavan' : s.role === 'admin' ? 'Priya Nair' : PATIENT.name,
+      onSetName: this.set('mdName'),
+      setEmail: s.role === 'doctor' ? 'anita.raghavan@curalis.clinic' : s.role === 'admin' ? 'priya.nair@curalis.clinic' : PATIENT.email,
+      onSetEmail: this.set('mdEmail'),
+      extraDetailFields: s.role === 'patient' ? ['Date of birth','Gender','Blood group','Emergency contact'] : [],
+      tzHelp: s.role === 'doctor' ? 'Your schedule and consulting hours are shown in this time zone.'
+        : 'Appointment times and medication reminders are shown and scheduled in this time zone.',
+      calNotConnected: !s.calConnected, calIsConnected: s.calConnected,
+      disconnectCal: () => { this.setState({ calConnected:false }); this.flash('Google Calendar disconnected.'); },
+      emailList: s.role === 'doctor'
+        ? ['Booking confirmations for your schedule','A reminder the day before and an hour before','Cancellations and reschedules','Notice when the clinic marks you on leave']
+        : s.role === 'admin'
+        ? ['Daily clinic summary','Failed notification alerts','Leave cancellations affecting patients']
+        : ['Booking confirmations','A reminder the day before and an hour before','Cancellations and changes to your appointments','Your visit summary when it\u2019s ready','Medication reminders, when switched on'],
+      saveSettings: () => this.flash('Changes saved.'),
+      updatePassword: () => this.flash('Password updated.'),
+
+      doctor, dates, activeDate, slots, holdText, appt
+    };
+  }
+}
+
+</script>
+</body>
+</html>

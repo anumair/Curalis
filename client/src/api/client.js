@@ -19,32 +19,38 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On a 401, try exactly one silent refresh, then replay the original
-// request. Concurrent 401s share the same in-flight refresh so a burst of
-// requests doesn't fire the refresh endpoint multiple times.
+// Refresh tokens are single-use and rotated server-side: presenting the
+// same one twice revokes *all* of the user's sessions as a reuse-attack
+// defense. So every caller (a 401 retry here, AuthContext's mount-time
+// restore, React StrictMode double-invoking that effect in dev) must share
+// one in-flight request rather than each firing their own.
 let refreshPromise = null
+
+export function silentRefresh() {
+  refreshPromise ??= api
+    .post('/auth/refresh')
+    .then((res) => {
+      setAccessToken(res.data.accessToken)
+      return res.data
+    })
+    .finally(() => {
+      refreshPromise = null
+    })
+  return refreshPromise
+}
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config
-    if (error.response?.status !== 401 || original._retry) {
+    const isRefreshCall = original?.url?.includes('/auth/refresh')
+    if (error.response?.status !== 401 || original._retry || isRefreshCall) {
       return Promise.reject(error)
     }
     original._retry = true
 
-    refreshPromise ??= api
-      .post('/auth/refresh')
-      .then((res) => {
-        setAccessToken(res.data.accessToken)
-        return res.data.accessToken
-      })
-      .finally(() => {
-        refreshPromise = null
-      })
-
     try {
-      const token = await refreshPromise
+      const { accessToken: token } = await silentRefresh()
       original.headers.Authorization = `Bearer ${token}`
       return api(original)
     } catch (refreshError) {

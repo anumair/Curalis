@@ -8,7 +8,7 @@ import {
 import { hashPassword, comparePassword } from '../../utils/password.js';
 import { ApiError } from '../../utils/errors.js';
 
-export async function registerPatient({ email, password, fullName, phone, timezone }) {
+export async function registerPatient({ email, password, fullName, phone, timezone, dateOfBirth, gender, bloodGroup }) {
   const normalisedEmail = email.toLowerCase();
 
   const existing = await prisma.user.findUnique({ where: { email: normalisedEmail } });
@@ -30,7 +30,14 @@ export async function registerPatient({ email, password, fullName, phone, timezo
           ...(timezone ? { timezone } : {}),
         },
       });
-      await tx.patientProfile.create({ data: { userId: user.id } });
+      await tx.patientProfile.create({
+        data: {
+          userId: user.id,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          gender,
+          bloodGroup,
+        },
+      });
       return user;
     });
   } catch (err) {

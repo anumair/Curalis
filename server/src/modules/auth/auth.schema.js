@@ -10,6 +10,11 @@ export const registerSchema = z.object({
   // Detected client-side via Intl.DateTimeFormat().resolvedOptions().timeZone
   // and sent at registration; falls back to the schema default otherwise.
   timezone: z.string().refine(isValidTimeZone, 'Invalid IANA timezone').optional(),
+  // These three already exist on PatientProfile but had no way to be set
+  // until the frontend's sign-up form asked for them.
+  dateOfBirth: z.string().date('dateOfBirth must be YYYY-MM-DD').optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'UNDISCLOSED']).optional(),
+  bloodGroup: z.string().optional(),
 });
 
 export const loginSchema = z.object({
