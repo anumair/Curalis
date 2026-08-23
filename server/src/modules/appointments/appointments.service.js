@@ -516,3 +516,86 @@ export async function rescheduleAppointment(patientId, appointmentId, newStartsA
 
   return { appointmentId: result.newAppointmentId, startsAt: result.newStartsAt, endsAt: result.newEndsAt };
 }
+
+// Appointment.doctor/.patient relate to DoctorProfile/PatientProfile, not
+// User directly — fullName lives one hop further, on each profile's own
+// `user` relation.
+const DOCTOR_SUMMARY_INCLUDE = { include: { user: { select: { id: true, fullName: true } } } };
+const PATIENT_SUMMARY_INCLUDE = { include: { user: { select: { id: true, fullName: true } } } };
+
+function toAppointmentSummary(appointment) {
+  return {
+    id: appointment.id,
+    status: appointment.status,
+    startsAt: appointment.startsAt,
+    endsAt: appointment.endsAt,
+    doctor: {
+      id: appointment.doctor.userId,
+      fullName: appointment.doctor.user.fullName,
+      specialisation: appointment.doctor.specialisation,
+    },
+  };
+}
+
+// RESCHEDULED/EXPIRED/HELD rows are never patient-visible here: RESCHEDULED
+// is superseded by the appointment it became (that one carries the real
+// status), EXPIRED never became a real booking, and HELD is mid-flow (the
+// booking screen owns that state, not the dashboard).
+export async function listMyAppointments(patientId, status) {
+  const now = new Date();
+  const where =
+    status === 'upcoming'
+      ? { patientId, status: 'CONFIRMED', startsAt: { gt: now } }
+      : {
+          patientId,
+          OR: [
+            { status: { in: ['COMPLETED', 'CANCELLED_BY_PATIENT', 'CANCELLED_BY_DOCTOR', 'CANCELLED_BY_CLINIC'] } },
+            { status: 'CONFIRMED', startsAt: { lte: now } },
+          ],
+        };
+
+  const appointments = await prisma.appointment.findMany({
+    where,
+    include: { doctor: DOCTOR_SUMMARY_INCLUDE },
+    orderBy: { startsAt: status === 'upcoming' ? 'asc' : 'desc' },
+  });
+
+  return appointments.map(toAppointmentSummary);
+}
+
+// Scoped by relationship, not just role: a patient/doctor can only fetch
+// an appointment they're actually party to, an admin can fetch any.
+export async function getAppointmentById(user, appointmentId) {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      doctor: DOCTOR_SUMMARY_INCLUDE,
+      patient: PATIENT_SUMMARY_INCLUDE,
+      symptomForm: true,
+    },
+  });
+  if (!appointment) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
+
+  const isParty = appointment.patientId === user.id || appointment.doctorId === user.id;
+  if (user.role !== 'ADMIN' && !isParty) {
+    throw new ApiError(403, 'FORBIDDEN', 'This appointment does not belong to you.');
+  }
+
+  return {
+    id: appointment.id,
+    status: appointment.status,
+    startsAt: appointment.startsAt,
+    endsAt: appointment.endsAt,
+    cancelledAt: appointment.cancelledAt,
+    cancellationReason: appointment.cancellationReason,
+    rescheduledFromId: appointment.rescheduledFromId,
+    createdAt: appointment.createdAt,
+    doctor: {
+      id: appointment.doctor.userId,
+      fullName: appointment.doctor.user.fullName,
+      specialisation: appointment.doctor.specialisation,
+    },
+    patient: { id: appointment.patient.userId, fullName: appointment.patient.user.fullName },
+    symptomForm: appointment.symptomForm,
+  };
+}

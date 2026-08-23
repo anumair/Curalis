@@ -9,6 +9,7 @@ import {
   confirmAppointmentSchema,
   cancelAppointmentSchema,
   rescheduleAppointmentSchema,
+  listMyAppointmentsSchema,
 } from './appointments.schema.js';
 import * as appointmentsController from './appointments.controller.js';
 
@@ -51,4 +52,18 @@ appointmentsRouter.patch(
   validate(appointmentIdParamSchema, 'params'),
   validate(rescheduleAppointmentSchema),
   asyncHandler(appointmentsController.reschedule)
+);
+appointmentsRouter.get(
+  '/patients/me/appointments',
+  requireAuth,
+  requireRole('PATIENT'),
+  validate(listMyAppointmentsSchema, 'query'),
+  asyncHandler(appointmentsController.listMine)
+);
+appointmentsRouter.get(
+  '/appointments/:id',
+  requireAuth,
+  requireRole('PATIENT', 'DOCTOR', 'ADMIN'),
+  validate(appointmentIdParamSchema, 'params'),
+  asyncHandler(appointmentsController.getById)
 );

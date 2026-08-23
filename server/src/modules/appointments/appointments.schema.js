@@ -31,3 +31,7 @@ export const cancelAppointmentSchema = z.object({
 export const rescheduleAppointmentSchema = z.object({
   newStartsAt: z.string().datetime({ message: 'newStartsAt must be an ISO 8601 UTC datetime' }),
 });
+
+export const listMyAppointmentsSchema = z.object({
+  status: z.enum(['upcoming', 'past']),
+});

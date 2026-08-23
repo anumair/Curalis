@@ -161,7 +161,7 @@ export async function logout(rawToken) {
 }
 
 export async function getUserById(userId) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { patientProfile: true } });
   if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found.');
   return user;
 }

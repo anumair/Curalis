@@ -30,3 +30,13 @@ export async function reschedule(req, res) {
     endsAt: result.endsAt.toISOString(),
   });
 }
+
+export async function listMine(req, res) {
+  const appointments = await appointmentsService.listMyAppointments(req.user.id, req.query.status);
+  res.json({ appointments });
+}
+
+export async function getById(req, res) {
+  const appointment = await appointmentsService.getAppointmentById(req.user, req.params.id);
+  res.json({ appointment });
+}

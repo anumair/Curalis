@@ -52,5 +52,10 @@ export async function logout(req, res) {
 
 export async function me(req, res) {
   const user = await authService.getUserById(req.user.id);
-  res.json({ user: toPublicUser(user) });
+  const response = toPublicUser(user);
+  if (user.patientProfile) {
+    const { dateOfBirth, gender, bloodGroup, medicationRemindersEnabled } = user.patientProfile;
+    response.patientProfile = { dateOfBirth, gender, bloodGroup, medicationRemindersEnabled };
+  }
+  res.json({ user: response });
 }
