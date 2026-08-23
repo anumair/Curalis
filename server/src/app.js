@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import { doctorsPublicRouter, doctorsAdminRouter } from './modules/doctors/doctors.routes.js';
 
 export const app = express();
 
@@ -21,9 +22,11 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api', doctorsPublicRouter);
+app.use('/api/admin', doctorsAdminRouter);
 
-// Remaining module routers are mounted here as each one is built (doctors,
-// availability, appointments, leave, clinical, calendar, admin).
+// Remaining module routers are mounted here as each one is built
+// (availability, appointments, leave, clinical, ai, notifications, calendar).
 
 app.use(notFoundHandler);
 app.use(errorHandler);

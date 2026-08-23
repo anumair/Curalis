@@ -1,15 +1,10 @@
 import * as authService from './auth.service.js';
 import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from '../../lib/cookies.js';
 import { ApiError } from '../../utils/errors.js';
+import { toPublicUser } from '../../utils/serializers.js';
 
 function requestMeta(req) {
   return { userAgent: req.get('user-agent') ?? undefined, ipAddress: req.ip };
-}
-
-// Never send passwordHash to the client.
-function toPublicUser(user) {
-  const { id, email, fullName, role, phone, timezone, createdAt } = user;
-  return { id, email, fullName, role, phone, timezone, createdAt };
 }
 
 export async function register(req, res) {
