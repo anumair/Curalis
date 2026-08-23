@@ -1,0 +1,1162 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Curalis API",
+    "version": "1.0.0",
+    "description": "Clinic appointment and follow-up platform. Patients book with doctors, describe symptoms up front, and get a plain-language summary and medication reminders after the visit. Doctors get an AI-prepared brief before each consultation. Admins manage doctors, working hours, leave, and notification delivery.\n\nAuthentication: the access token is a short-lived JWT returned by login/register/refresh, sent as `Authorization: Bearer <token>`. The refresh token travels separately as an httpOnly cookie and is never exposed to JavaScript."
+  },
+  "servers": [{ "url": "/api" }],
+  "tags": [
+    { "name": "Auth", "description": "Registration, login, session refresh, self-service profile" },
+    { "name": "Doctors (public)", "description": "Unauthenticated doctor search, used by patients before booking" },
+    { "name": "Doctors (self)", "description": "A doctor's own schedule, awaiting-notes list, and working hours" },
+    { "name": "Doctors (admin)", "description": "Admin provisioning and management of doctor accounts" },
+    { "name": "Availability", "description": "Computed bookable slots for a doctor on a given date" },
+    { "name": "Appointments", "description": "Booking lifecycle: hold, confirm, cancel, reschedule, read" },
+    { "name": "Clinical", "description": "Visit notes, prescriptions, post-visit summaries, reminder preferences" },
+    { "name": "AI summaries", "description": "Pre-visit briefing and manual summary regeneration" },
+    { "name": "Leave (admin)", "description": "Doctor leave preview and application, with patient impact" },
+    { "name": "Notifications (admin)", "description": "Failed-email log and manual retry" },
+    { "name": "Calendar", "description": "Google Calendar connect/disconnect and sync status" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_ERROR" },
+              "message": { "type": "string" },
+              "details": { "type": "object" }
+            }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "email": { "type": "string", "format": "email" },
+          "fullName": { "type": "string" },
+          "role": { "type": "string", "enum": ["PATIENT", "DOCTOR", "ADMIN"] },
+          "phone": { "type": "string", "nullable": true },
+          "timezone": { "type": "string", "example": "Asia/Kolkata" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "patientProfile": {
+            "type": "object",
+            "nullable": true,
+            "description": "Present only when role is PATIENT",
+            "properties": {
+              "dateOfBirth": { "type": "string", "format": "date", "nullable": true },
+              "gender": { "type": "string", "enum": ["MALE", "FEMALE", "OTHER", "UNDISCLOSED"], "nullable": true },
+              "bloodGroup": { "type": "string", "nullable": true },
+              "medicationRemindersEnabled": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "AuthSession": {
+        "type": "object",
+        "properties": {
+          "accessToken": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "DoctorPublic": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "fullName": { "type": "string" },
+          "timezone": { "type": "string" },
+          "specialisation": { "type": "string" },
+          "qualification": { "type": "string", "nullable": true },
+          "bio": { "type": "string", "nullable": true },
+          "consultationFee": { "type": "string", "example": "500" },
+          "slotDurationMin": { "type": "integer", "example": 30 },
+          "isAcceptingPatients": { "type": "boolean" }
+        }
+      },
+      "DoctorAdmin": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DoctorPublic" },
+          {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string" },
+              "phone": { "type": "string", "nullable": true },
+              "isActive": { "type": "boolean" },
+              "licenseNumber": { "type": "string", "nullable": true },
+              "bookingHorizonDays": { "type": "integer" },
+              "minLeadTimeMin": { "type": "integer" },
+              "workingHours": { "type": "array", "items": { "$ref": "#/components/schemas/WorkingHourShift" } },
+              "leaves": { "type": "array", "items": { "$ref": "#/components/schemas/Leave" } },
+              "upcomingAppointments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "startsAt": { "type": "string", "format": "date-time" },
+                    "endsAt": { "type": "string", "format": "date-time" },
+                    "patientName": { "type": "string" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "DoctorListItem": {
+        "allOf": [
+          { "$ref": "#/components/schemas/DoctorPublic" },
+          {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string" },
+              "isActive": { "type": "boolean" },
+              "workingDays": { "type": "array", "items": { "type": "integer" }, "description": "0=Sunday..6=Saturday" },
+              "appointmentsNext7Days": { "type": "integer" },
+              "onLeaveToday": { "type": "boolean" },
+              "today": {
+                "type": "object",
+                "properties": {
+                  "count": { "type": "integer" },
+                  "first": { "type": "string", "format": "date-time", "nullable": true },
+                  "last": { "type": "string", "format": "date-time", "nullable": true }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "WorkingHourShift": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "doctorId": { "type": "string", "format": "uuid" },
+          "dayOfWeek": { "type": "integer", "minimum": 0, "maximum": 6 },
+          "startMinute": { "type": "integer", "description": "Minutes from local midnight" },
+          "endMinute": { "type": "integer" }
+        }
+      },
+      "WorkingHourShiftInput": {
+        "type": "object",
+        "required": ["dayOfWeek", "startMinute", "endMinute"],
+        "properties": {
+          "dayOfWeek": { "type": "integer", "minimum": 0, "maximum": 6 },
+          "startMinute": { "type": "integer", "minimum": 0, "maximum": 1440 },
+          "endMinute": { "type": "integer", "minimum": 0, "maximum": 1440 }
+        }
+      },
+      "Leave": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "doctorId": { "type": "string", "format": "uuid" },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" },
+          "scope": { "type": "string", "enum": ["FULL_DAY", "PARTIAL"] },
+          "reason": { "type": "string", "nullable": true }
+        }
+      },
+      "AvailabilitySlot": {
+        "type": "object",
+        "properties": {
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SymptomForm": {
+        "type": "object",
+        "properties": {
+          "symptoms": { "type": "string" },
+          "durationText": { "type": "string", "nullable": true },
+          "severity": { "type": "integer", "minimum": 1, "maximum": 10, "nullable": true },
+          "existingConditions": { "type": "string", "nullable": true },
+          "currentMedications": { "type": "string", "nullable": true },
+          "allergies": { "type": "string", "nullable": true },
+          "additionalNotes": { "type": "string", "nullable": true }
+        }
+      },
+      "AppointmentSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "status": {
+            "type": "string",
+            "enum": ["HELD", "CONFIRMED", "CANCELLED_BY_PATIENT", "CANCELLED_BY_DOCTOR", "CANCELLED_BY_CLINIC", "RESCHEDULED", "EXPIRED", "COMPLETED"]
+          },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" },
+          "doctor": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "fullName": { "type": "string" },
+              "specialisation": { "type": "string" }
+            }
+          }
+        }
+      },
+      "AppointmentDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/AppointmentSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "cancelledAt": { "type": "string", "format": "date-time", "nullable": true },
+              "cancellationReason": { "type": "string", "nullable": true },
+              "rescheduledFromId": { "type": "string", "format": "uuid", "nullable": true },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "patient": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "format": "uuid" },
+                  "fullName": { "type": "string" },
+                  "email": { "type": "string" },
+                  "phone": { "type": "string", "nullable": true },
+                  "dateOfBirth": { "type": "string", "format": "date", "nullable": true },
+                  "gender": { "type": "string", "nullable": true },
+                  "bloodGroup": { "type": "string", "nullable": true }
+                }
+              },
+              "symptomForm": { "allOf": [{ "$ref": "#/components/schemas/SymptomForm" }], "nullable": true }
+            }
+          }
+        ]
+      },
+      "DoctorScheduleEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["CONFIRMED", "COMPLETED"] },
+          "patient": {
+            "type": "object",
+            "properties": {
+              "fullName": { "type": "string" },
+              "age": { "type": "integer", "nullable": true },
+              "gender": { "type": "string", "nullable": true }
+            }
+          },
+          "complaint": { "type": "string", "nullable": true },
+          "urgency": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"], "nullable": true }
+        }
+      },
+      "PrescriptionItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "drugName": { "type": "string" },
+          "dose": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["OD", "BD", "TDS", "QID", "HS", "SOS"] },
+          "durationDays": { "type": "integer" },
+          "instructions": { "type": "string", "nullable": true },
+          "timesOfDayMinutes": { "type": "array", "items": { "type": "integer" }, "description": "Minutes from local midnight, patient's timezone" }
+        }
+      },
+      "Prescription": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "appointmentId": { "type": "string", "format": "uuid" },
+          "patientId": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["ACTIVE", "SUPERSEDED"] },
+          "startDate": { "type": "string", "format": "date" },
+          "notes": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PrescriptionItem" } },
+          "doctor": {
+            "type": "object",
+            "properties": { "fullName": { "type": "string" }, "specialisation": { "type": "string" } }
+          }
+        }
+      },
+      "AiSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "appointmentId": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "enum": ["PRE_VISIT", "POST_VISIT"] },
+          "status": { "type": "string", "enum": ["PENDING", "READY", "FAILED"] },
+          "payload": {
+            "type": "object",
+            "nullable": true,
+            "description": "PRE_VISIT: { urgency, chiefComplaint, suggestedQuestions[] }. POST_VISIT: { summary, medicationSchedule[], followUpSteps[] }."
+          },
+          "urgency": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH"], "nullable": true },
+          "model": { "type": "string", "nullable": true },
+          "attempts": { "type": "integer" },
+          "lastError": { "type": "string", "nullable": true },
+          "generatedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "VisitNote": {
+        "type": "object",
+        "properties": {
+          "clinicalNotes": { "type": "string" },
+          "diagnosis": { "type": "string", "nullable": true },
+          "followUpDate": { "type": "string", "format": "date", "nullable": true },
+          "followUpNotes": { "type": "string", "nullable": true }
+        }
+      },
+      "NotificationOutbox": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "type": { "type": "string", "example": "BOOKING_CONFIRMATION" },
+          "recipientEmail": { "type": "string" },
+          "appointmentId": { "type": "string", "format": "uuid", "nullable": true },
+          "subject": { "type": "string" },
+          "status": { "type": "string", "enum": ["FAILED"] },
+          "attempts": { "type": "integer" },
+          "maxAttempts": { "type": "integer" },
+          "lastError": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LeaveConflict": {
+        "type": "object",
+        "properties": {
+          "appointmentId": { "type": "string", "format": "uuid" },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": { "type": "string", "format": "date-time" },
+          "patientName": { "type": "string" },
+          "patientEmail": { "type": "string" },
+          "patientPhone": { "type": "string", "nullable": true }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new patient account",
+        "description": "Patients only — doctor and admin accounts are provisioned separately. Sets the refresh token as an httpOnly cookie.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "fullName"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "fullName": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "timezone": { "type": "string", "example": "Asia/Kolkata" },
+                  "dateOfBirth": { "type": "string", "format": "date" },
+                  "gender": { "type": "string", "enum": ["MALE", "FEMALE", "OTHER", "UNDISCLOSED"] },
+                  "bloodGroup": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Account created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSession" } } } },
+          "409": { "description": "Email already in use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sign in",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSession" } } } },
+          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Silently refresh the session using the httpOnly refresh cookie",
+        "description": "Refresh tokens are single-use and rotated on every call. Reusing an already-consumed token revokes every active session for that user.",
+        "responses": {
+          "200": { "description": "New access token issued", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSession" } } } },
+          "401": { "description": "No/invalid/reused refresh token", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sign out",
+        "description": "Revokes the current refresh token and clears the cookie.",
+        "responses": { "204": { "description": "Signed out" } }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get the current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Current user", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } }
+        }
+      },
+      "patch": {
+        "tags": ["Auth"],
+        "summary": "Update own profile",
+        "description": "Name, phone, and timezone only — email is the login identity and is not editable here.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "fullName": { "type": "string" }, "phone": { "type": "string" }, "timezone": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } }
+        }
+      }
+    },
+    "/auth/me/password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Change own password",
+        "description": "Revokes all refresh tokens on success, signing out every other session.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": { "currentPassword": { "type": "string" }, "newPassword": { "type": "string", "minLength": 8 } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Password changed" },
+          "401": { "description": "Current password incorrect", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/doctors": {
+      "get": {
+        "tags": ["Doctors (public)"],
+        "summary": "Search doctors",
+        "description": "Unauthenticated. Only returns doctors who are active and currently accepting patients.",
+        "parameters": [
+          { "name": "specialisation", "in": "query", "schema": { "type": "string" } },
+          { "name": "q", "in": "query", "description": "Free-text search over name and specialisation", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated doctor list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "doctors": { "type": "array", "items": { "$ref": "#/components/schemas/DoctorPublic" } },
+                    "total": { "type": "integer" },
+                    "page": { "type": "integer" },
+                    "pageSize": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/doctors/{id}": {
+      "get": {
+        "tags": ["Doctors (public)"],
+        "summary": "Get a doctor's public profile",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Doctor profile", "content": { "application/json": { "schema": { "type": "object", "properties": { "doctor": { "$ref": "#/components/schemas/DoctorPublic" } } } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/specialisations": {
+      "get": {
+        "tags": ["Doctors (public)"],
+        "summary": "List distinct specialisations currently offered",
+        "responses": {
+          "200": { "description": "Specialisation list", "content": { "application/json": { "schema": { "type": "object", "properties": { "specialisations": { "type": "array", "items": { "type": "string" } } } } } } }
+        }
+      }
+    },
+    "/doctors/{doctorId}/availability": {
+      "get": {
+        "tags": ["Availability"],
+        "summary": "Get a doctor's bookable slots for one date",
+        "description": "Computed fresh on every request from working hours minus leave minus already-booked/held slots — there is no stored slot table.",
+        "parameters": [
+          { "name": "doctorId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "Available slots", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AvailabilitySlot" } } } } },
+          "422": { "description": "Date in the past or beyond the doctor's booking horizon", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/doctors/me/schedule": {
+      "get": {
+        "tags": ["Doctors (self)"],
+        "summary": "A doctor's own appointments for one date",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }],
+        "responses": {
+          "200": { "description": "Schedule for that date", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointments": { "type": "array", "items": { "$ref": "#/components/schemas/DoctorScheduleEntry" } } } } } } }
+        }
+      }
+    },
+    "/doctors/me/awaiting-notes": {
+      "get": {
+        "tags": ["Doctors (self)"],
+        "summary": "Confirmed appointments whose time has passed but have no visit note yet",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Up to 10 most recent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "appointments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "string", "format": "uuid" },
+                          "startsAt": { "type": "string", "format": "date-time" },
+                          "patient": { "type": "object", "properties": { "fullName": { "type": "string" } } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/doctors/me/working-hours": {
+      "get": {
+        "tags": ["Doctors (self)"],
+        "summary": "A doctor's own working hours and upcoming leave (read-only)",
+        "description": "Working hours and leave are set by an admin; this is the doctor's own read access to them.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Working hours and leave",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workingHours": { "type": "array", "items": { "$ref": "#/components/schemas/WorkingHourShift" } },
+                    "leaves": { "type": "array", "items": { "$ref": "#/components/schemas/Leave" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/doctors": {
+      "get": {
+        "tags": ["Doctors (admin)"],
+        "summary": "List every doctor with aggregated stats",
+        "description": "Unlike GET /doctors, includes doctors who are inactive or not accepting patients. Working days, appointments in the next 7 days, on-leave-today, and today's appointment count are all pre-aggregated.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Every doctor", "content": { "application/json": { "schema": { "type": "object", "properties": { "doctors": { "type": "array", "items": { "$ref": "#/components/schemas/DoctorListItem" } } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Doctors (admin)"],
+        "summary": "Provision a new doctor account",
+        "description": "The server generates a temporary password and returns it once — it is never retrievable again.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "fullName", "specialisation"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "fullName": { "type": "string" },
+                  "phone": { "type": "string" },
+                  "timezone": { "type": "string" },
+                  "specialisation": { "type": "string" },
+                  "qualification": { "type": "string" },
+                  "licenseNumber": { "type": "string" },
+                  "bio": { "type": "string" },
+                  "consultationFee": { "type": "number" },
+                  "slotDurationMin": { "type": "integer" },
+                  "bookingHorizonDays": { "type": "integer" },
+                  "minLeadTimeMin": { "type": "integer" },
+                  "isAcceptingPatients": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Doctor created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "user": { "$ref": "#/components/schemas/User" }, "temporaryPassword": { "type": "string" } }
+                }
+              }
+            }
+          },
+          "409": { "description": "Email or licence number already taken", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/admin/doctors/{id}": {
+      "get": {
+        "tags": ["Doctors (admin)"],
+        "summary": "Full admin-only doctor detail",
+        "description": "Includes fields the public/patient-facing endpoints deliberately omit (licence number, active flag, booking horizon, lead time), plus working hours, leave, and upcoming appointments.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Doctor detail", "content": { "application/json": { "schema": { "type": "object", "properties": { "doctor": { "$ref": "#/components/schemas/DoctorAdmin" } } } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "patch": {
+        "tags": ["Doctors (admin)"],
+        "summary": "Update a doctor's account/professional details, or deactivate/reactivate",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "description": "At least one field required. Same shape as create, minus email, plus isActive.",
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } }
+        }
+      }
+    },
+    "/admin/doctors/{id}/working-hours": {
+      "put": {
+        "tags": ["Doctors (admin)"],
+        "summary": "Replace a doctor's entire working-hours set",
+        "description": "Full replace, not merge — send every shift the doctor should have, including ones that are unchanged. Shifts on the same day must not overlap.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/WorkingHourShiftInput" } } } }
+        },
+        "responses": {
+          "200": { "description": "New working hours", "content": { "application/json": { "schema": { "type": "object", "properties": { "workingHours": { "type": "array", "items": { "$ref": "#/components/schemas/WorkingHourShift" } } } } } } },
+          "422": { "description": "Overlapping shifts on the same day", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/hold": {
+      "post": {
+        "tags": ["Appointments"],
+        "summary": "Hold a slot for 10 minutes while the patient fills in symptoms",
+        "description": "Serialised per-doctor via a Postgres advisory lock plus an exclusion constraint — a slot can never be double-held/booked even under concurrent requests.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["doctorId", "startsAt"],
+                "properties": { "doctorId": { "type": "string", "format": "uuid" }, "startsAt": { "type": "string", "format": "date-time" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Slot held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "appointmentId": { "type": "string", "format": "uuid" },
+                    "holdToken": { "type": "string" },
+                    "holdExpiresAt": { "type": "string", "format": "date-time" },
+                    "doctor": { "type": "object", "properties": { "id": { "type": "string" }, "fullName": { "type": "string" }, "specialisation": { "type": "string" } } },
+                    "startsAt": { "type": "string", "format": "date-time" },
+                    "endsAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "409": { "description": "Slot no longer available, or doctor unavailable/on leave", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "422": { "description": "Outside working hours, in the past, beyond horizon, or below minimum lead time", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/{id}/confirm": {
+      "post": {
+        "tags": ["Appointments"],
+        "summary": "Confirm a held slot with the patient's symptom intake",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["holdToken", "symptomForm"],
+                "properties": {
+                  "holdToken": { "type": "string" },
+                  "symptomForm": { "$ref": "#/components/schemas/SymptomForm" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Confirmed", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointmentId": { "type": "string" }, "status": { "type": "string" } } } } } },
+          "403": { "description": "Not your hold, or hold token mismatch", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "409": { "description": "Hold is no longer active", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "410": { "description": "Hold expired", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/{id}/cancel": {
+      "post": {
+        "tags": ["Appointments"],
+        "summary": "Cancel a confirmed appointment",
+        "description": "Patients and doctors cancel their own; admins cancel any. The canceller's role determines the resulting status.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "reason": { "type": "string" } } } } } },
+        "responses": {
+          "200": { "description": "Cancelled", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointmentId": { "type": "string" }, "status": { "type": "string" } } } } } },
+          "409": { "description": "Only a confirmed appointment can be cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/{id}/reschedule": {
+      "patch": {
+        "tags": ["Appointments"],
+        "summary": "Move a confirmed appointment to a new time",
+        "description": "One atomic transaction: the old row becomes RESCHEDULED and a brand-new CONFIRMED row is created (new id, returned as appointmentId) carrying forward the symptom form, AI summary, and calendar sync state.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["newStartsAt"], "properties": { "newStartsAt": { "type": "string", "format": "date-time" } } } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Rescheduled — note the returned id is a new appointment, not the one in the path",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "appointmentId": { "type": "string" }, "startsAt": { "type": "string" }, "endsAt": { "type": "string" } } } } }
+          },
+          "409": { "description": "Not confirmed, doctor unavailable, or the new slot is taken", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/patients/me/appointments": {
+      "get": {
+        "tags": ["Appointments"],
+        "summary": "List the current patient's appointments",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "status", "in": "query", "required": true, "schema": { "type": "string", "enum": ["upcoming", "past"] } }],
+        "responses": {
+          "200": { "description": "Appointments", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointments": { "type": "array", "items": { "$ref": "#/components/schemas/AppointmentSummary" } } } } } } }
+        }
+      }
+    },
+    "/appointments/{id}": {
+      "get": {
+        "tags": ["Appointments"],
+        "summary": "Get one appointment's full detail",
+        "description": "Scoped by relationship, not just role — a patient or doctor can only fetch an appointment they're actually party to. Admins can fetch any.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Appointment detail", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointment": { "$ref": "#/components/schemas/AppointmentDetail" } } } } } },
+          "403": { "description": "Not party to this appointment", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/{id}/pre-visit-summary": {
+      "get": {
+        "tags": ["AI summaries"],
+        "summary": "Doctor's AI-prepared brief for an upcoming appointment",
+        "description": "Generated automatically when the patient confirms booking. status is PENDING until the LLM job completes (needs the background worker running).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": {
+            "description": "Summary and the underlying symptom form",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "summary": { "$ref": "#/components/schemas/AiSummary" }, "symptomForm": { "$ref": "#/components/schemas/SymptomForm" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appointments/{id}/summary/regenerate": {
+      "post": {
+        "tags": ["AI summaries"],
+        "summary": "Manually regenerate a summary",
+        "description": "Ownership is per-type: only the doctor may regenerate PRE_VISIT, only the patient may regenerate POST_VISIT.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["type"], "properties": { "type": { "type": "string", "enum": ["PRE_VISIT", "POST_VISIT"] } } } } }
+        },
+        "responses": {
+          "202": { "description": "Regeneration queued" },
+          "403": { "description": "Wrong role for this summary type", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/{id}/visit-note": {
+      "post": {
+        "tags": ["Clinical"],
+        "summary": "Submit the doctor's visit note",
+        "description": "Transitions the appointment CONFIRMED → COMPLETED and triggers the post-visit AI summary job. Doctor-only, one submission per appointment.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["clinicalNotes"],
+                "properties": {
+                  "clinicalNotes": { "type": "string" },
+                  "diagnosis": { "type": "string" },
+                  "followUpDate": { "type": "string", "format": "date" },
+                  "followUpNotes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Note recorded", "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" } } } } } },
+          "409": { "description": "Appointment is not confirmed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/appointments/{id}/post-visit-summary": {
+      "get": {
+        "tags": ["Clinical"],
+        "summary": "Patient's plain-language visit summary",
+        "description": "status is PENDING until the doctor's notes have been turned into a patient-facing summary (needs the background worker running).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": {
+            "description": "Summary and the source visit note",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "summary": { "$ref": "#/components/schemas/AiSummary" }, "visitNote": { "allOf": [{ "$ref": "#/components/schemas/VisitNote" }], "nullable": true } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/appointments/{id}/prescription": {
+      "get": {
+        "tags": ["Clinical"],
+        "summary": "Get the prescription already submitted for this appointment, if any",
+        "description": "Prescription.appointmentId is unique with no update path — this exists so the doctor UI can detect an existing prescription before offering to submit another.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Prescription, or null if none yet", "content": { "application/json": { "schema": { "type": "object", "properties": { "prescription": { "allOf": [{ "$ref": "#/components/schemas/Prescription" }], "nullable": true } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["Clinical"],
+        "summary": "Submit a prescription for an appointment",
+        "description": "Supersedes the patient's previous ACTIVE prescription (if any), cancelling its still-pending reminders, and materialises new MedicationReminder rows for the dispatch worker. Exactly one prescription may ever be submitted per appointment.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["startDate", "items"],
+                "properties": {
+                  "startDate": { "type": "string", "format": "date" },
+                  "notes": { "type": "string" },
+                  "items": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": ["drugName", "dose", "frequency", "durationDays"],
+                      "properties": {
+                        "drugName": { "type": "string" },
+                        "dose": { "type": "string" },
+                        "frequency": { "type": "string", "enum": ["OD", "BD", "TDS", "QID", "HS", "SOS"] },
+                        "durationDays": { "type": "integer" },
+                        "instructions": { "type": "string" },
+                        "timesOfDayMinutes": { "type": "array", "items": { "type": "integer" }, "description": "Overrides the frequency's default reminder times. Omit to use the default." }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Prescription created", "content": { "application/json": { "schema": { "type": "object", "properties": { "prescriptionId": { "type": "string" } } } } } },
+          "409": { "description": "Appointment not confirmed/completed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/patients/me/prescriptions": {
+      "get": {
+        "tags": ["Clinical"],
+        "summary": "List the current patient's prescriptions",
+        "description": "Ordered newest first. Only one prescription is ACTIVE at a time; older ones are SUPERSEDED.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Prescriptions", "content": { "application/json": { "schema": { "type": "object", "properties": { "prescriptions": { "type": "array", "items": { "$ref": "#/components/schemas/Prescription" } } } } } } }
+        }
+      }
+    },
+    "/patients/me/reminder-preferences": {
+      "patch": {
+        "tags": ["Clinical"],
+        "summary": "Turn medication email reminders on or off",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["medicationRemindersEnabled"], "properties": { "medicationRemindersEnabled": { "type": "boolean" } } } } }
+        },
+        "responses": { "204": { "description": "Preference updated" } }
+      }
+    },
+    "/admin/doctors/{id}/leave/preview": {
+      "post": {
+        "tags": ["Leave (admin)"],
+        "summary": "Preview which appointments a leave period would affect",
+        "description": "Read-only — does not cancel anything. FULL_DAY takes a single local calendar date; PARTIAL takes explicit UTC instants.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  { "type": "object", "required": ["scope", "date"], "properties": { "scope": { "type": "string", "enum": ["FULL_DAY"] }, "date": { "type": "string", "format": "date" }, "reason": { "type": "string" } } },
+                  { "type": "object", "required": ["scope", "startsAt", "endsAt"], "properties": { "scope": { "type": "string", "enum": ["PARTIAL"] }, "startsAt": { "type": "string", "format": "date-time" }, "endsAt": { "type": "string", "format": "date-time" }, "reason": { "type": "string" } } }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Affected appointments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "startsAt": { "type": "string", "format": "date-time" },
+                    "endsAt": { "type": "string", "format": "date-time" },
+                    "affectedAppointments": { "type": "array", "items": { "$ref": "#/components/schemas/LeaveConflict" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/doctors/{id}/leave": {
+      "post": {
+        "tags": ["Leave (admin)"],
+        "summary": "Apply a leave period",
+        "description": "Cancels every affected CONFIRMED appointment to CANCELLED_BY_CLINIC, expires overlapping HELD rows, and emails each affected patient a rebooking link. Same request shape as preview.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  { "type": "object", "required": ["scope", "date"], "properties": { "scope": { "type": "string", "enum": ["FULL_DAY"] }, "date": { "type": "string", "format": "date" }, "reason": { "type": "string" } } },
+                  { "type": "object", "required": ["scope", "startsAt", "endsAt"], "properties": { "scope": { "type": "string", "enum": ["PARTIAL"] }, "startsAt": { "type": "string", "format": "date-time" }, "endsAt": { "type": "string", "format": "date-time" }, "reason": { "type": "string" } } }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Leave applied", "content": { "application/json": { "schema": { "type": "object", "properties": { "leaveId": { "type": "string" }, "affectedCount": { "type": "integer" } } } } } }
+        }
+      }
+    },
+    "/admin/leave/{leaveId}": {
+      "delete": {
+        "tags": ["Leave (admin)"],
+        "summary": "Remove a leave record",
+        "description": "Only removes the leave record itself — does not restore appointments that were already cancelled because of it.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "leaveId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "204": { "description": "Removed" },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/admin/notifications/failed": {
+      "get": {
+        "tags": ["Notifications (admin)"],
+        "summary": "List emails that exhausted their automatic retries",
+        "description": "Curalis retries failed sends automatically, waiting longer between each attempt, up to 5 times. This lists only what's still FAILED after that.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } }],
+        "responses": {
+          "200": {
+            "description": "Failed notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": { "type": "array", "items": { "$ref": "#/components/schemas/NotificationOutbox" } },
+                    "total": { "type": "integer" },
+                    "page": { "type": "integer" },
+                    "pageSize": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/notifications/{id}/retry": {
+      "post": {
+        "tags": ["Notifications (admin)"],
+        "summary": "Manually retry a failed notification",
+        "description": "Resets status to PENDING and attempts to 0 so the background worker picks it up on its next sweep.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": {
+          "200": { "description": "Queued for retry", "content": { "application/json": { "schema": { "type": "object", "properties": { "notification": { "$ref": "#/components/schemas/NotificationOutbox" } } } } } },
+          "404": { "description": "No FAILED row with that id", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/calendar/status": {
+      "get": {
+        "tags": ["Calendar"],
+        "summary": "Check whether the current user has Google Calendar connected",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Connection status",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "connected": { "type": "boolean" }, "googleEmail": { "type": "string", "nullable": true }, "revoked": { "type": "boolean" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/google/connect": {
+      "get": {
+        "tags": ["Calendar"],
+        "summary": "Get the Google consent URL to start connecting a calendar",
+        "description": "Returns the URL as JSON rather than redirecting directly, since the access token lives in memory on the client (never a cookie) and has to be presented as a normal Authorization header — the frontend does `window.location.href = authUrl` itself.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Consent URL", "content": { "application/json": { "schema": { "type": "object", "properties": { "authUrl": { "type": "string" } } } } } }
+        }
+      }
+    },
+    "/calendar/google/callback": {
+      "get": {
+        "tags": ["Calendar"],
+        "summary": "OAuth callback Google redirects to after consent",
+        "description": "Not called directly by clients. A genuine browser redirect from Google, tied back to the initiating user via a signed state token rather than an Authorization header. Always ends by redirecting the browser to the frontend's Settings page with a `?calendar=` status.",
+        "parameters": [
+          { "name": "code", "in": "query", "schema": { "type": "string" } },
+          { "name": "state", "in": "query", "schema": { "type": "string" } },
+          { "name": "error", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "302": { "description": "Redirects to the frontend Settings page" } }
+      }
+    },
+    "/calendar/google": {
+      "delete": {
+        "tags": ["Calendar"],
+        "summary": "Disconnect Google Calendar",
+        "description": "Best-effort revoke with Google, then always removes the local connection record regardless of whether the revoke call succeeded. Idempotent.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "204": { "description": "Disconnected" } }
+      }
+    }
+  }
+}

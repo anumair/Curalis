@@ -64,6 +64,11 @@ See `server/.env.example` for the full list. At minimum you'll need:
 The app degrades gracefully in dev without the third-party keys (bookings, prescriptions,
 and the rest of the core flow all work); AI summaries and calendar sync just won't run.
 
+## API docs
+
+With the server running, browse the full OpenAPI reference at `http://localhost:4000/api-docs`
+(spec source: `server/openapi.json`).
+
 ## Notes
 
 - Demo accounts and passwords are printed by `npm run seed`.

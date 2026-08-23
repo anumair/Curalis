@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
+import swaggerUi from 'swagger-ui-express';
+import { createRequire } from 'node:module';
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -16,6 +18,9 @@ import { clinicalRouter } from './modules/clinical/clinical.routes.js';
 import { leaveAdminRouter } from './modules/leave/leave.routes.js';
 import { calendarRouter } from './modules/calendar/calendar.routes.js';
 
+const require = createRequire(import.meta.url);
+const openapiSpec = require('../openapi.json');
+
 export const app = express();
 
 app.use(helmet());
@@ -27,6 +32,8 @@ app.use(pinoHttp({ logger }));
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: env.NODE_ENV });
 });
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 app.use('/api/auth', authRoutes);
 app.use('/api', doctorsPublicRouter);
