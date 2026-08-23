@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getMySchedule, getMyAwaitingNotes, getMyWorkingHours } from '../../api/doctorSchedule.js';
+import { getCalendarStatus } from '../../api/calendar.js';
 import { summarizeWorkingHours } from '../../lib/workingHours.js';
 import { formatLongDate } from '../../lib/format.js';
 import { Tag } from '../../components/ui/Tag.jsx';
@@ -32,6 +33,7 @@ export function DoctorDashboardPage() {
   const scheduleQuery = useQuery({ queryKey: ['doctor-schedule', date], queryFn: () => getMySchedule(date) });
   const awaitingQuery = useQuery({ queryKey: ['doctor-awaiting-notes'], queryFn: getMyAwaitingNotes });
   const hoursQuery = useQuery({ queryKey: ['doctor-working-hours'], queryFn: getMyWorkingHours });
+  const calendarQuery = useQuery({ queryKey: ['calendar-status'], queryFn: getCalendarStatus });
 
   const schedule = scheduleQuery.data ?? [];
   const awaiting = awaitingQuery.data ?? [];
@@ -152,14 +154,16 @@ export function DoctorDashboardPage() {
             <p style={{ fontSize: 12, opacity: 0.6, margin: 'var(--space-2) 0 0' }}>Your working hours and leave are managed by your clinic administrator.</p>
           </div>
 
-          <div style={{ background: 'var(--color-accent-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)' }}>
-            <p style={{ fontSize: 13, color: 'var(--color-accent-800)', margin: '0 0 var(--space-3)', textWrap: 'pretty' }}>
-              Connect your Google Calendar in Settings to see your consultations alongside the rest of your day.
-            </p>
-            <Button as={Link} to="/settings">
-              Open Settings
-            </Button>
-          </div>
+          {!calendarQuery.data?.connected && (
+            <div style={{ background: 'var(--color-accent-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)' }}>
+              <p style={{ fontSize: 13, color: 'var(--color-accent-800)', margin: '0 0 var(--space-3)', textWrap: 'pretty' }}>
+                Connect your Google Calendar in Settings to see your consultations alongside the rest of your day.
+              </p>
+              <Button as={Link} to="/settings">
+                Open Settings
+              </Button>
+            </div>
+          )}
         </aside>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getDoctor, getAvailability } from '../../api/doctors.js';
 import { holdAppointment, confirmAppointment as confirmAppointmentApi } from '../../api/appointments.js';
+import { getCalendarStatus } from '../../api/calendar.js';
 import { initialsOf } from '../../lib/initials.js';
 import { formatLongDate, formatTimeRange } from '../../lib/format.js';
 import { Button } from '../../components/ui/Button.jsx';
@@ -148,6 +149,8 @@ export function BookAppointmentPage() {
     queryFn: () => getAvailability(doctorId, selectedDate),
     enabled: Boolean(selectedDate),
   });
+
+  const calendarQuery = useQuery({ queryKey: ['calendar-status'], queryFn: getCalendarStatus });
 
   const holdMutation = useMutation({
     mutationFn: (startsAt) => holdAppointment(doctorId, startsAt),
@@ -463,13 +466,15 @@ export function BookAppointmentPage() {
                 ))}
               </div>
 
-              <div style={{ background: 'var(--color-accent-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)', marginTop: 'var(--space-6)', maxWidth: 600 }}>
-                <h4 style={{ marginBottom: 6 }}>Want appointments to appear in your calendar automatically?</h4>
-                <p style={{ fontSize: 14, color: 'var(--color-accent-800)', textWrap: 'pretty' }}>Connect Google Calendar once, and every booking, change, and cancellation syncs on its own.</p>
-                <Button as={Link} to="/settings">
-                  Connect Google Calendar
-                </Button>
-              </div>
+              {!calendarQuery.data?.connected && (
+                <div style={{ background: 'var(--color-accent-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)', marginTop: 'var(--space-6)', maxWidth: 600 }}>
+                  <h4 style={{ marginBottom: 6 }}>Want appointments to appear in your calendar automatically?</h4>
+                  <p style={{ fontSize: 14, color: 'var(--color-accent-800)', textWrap: 'pretty' }}>Connect Google Calendar once, and every booking, change, and cancellation syncs on its own.</p>
+                  <Button as={Link} to="/settings">
+                    Connect Google Calendar
+                  </Button>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginTop: 'var(--space-6)' }}>
                 <Button style={{ padding: '12px 24px' }} onClick={() => navigate(`/appointments/${confirmedAppointmentId}`)}>

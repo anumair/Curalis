@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { listAppointments } from '../../api/appointments.js';
 import { listPrescriptions } from '../../api/prescriptions.js';
+import { getCalendarStatus } from '../../api/calendar.js';
 import { formatLongDate, formatTimeRange, formatRelativeDay } from '../../lib/format.js';
 import { todaysDoses } from '../../lib/medication.js';
 import { Card } from '../../components/ui/Card.jsx';
@@ -47,6 +48,7 @@ export function PatientDashboardPage() {
   const upcomingQuery = useQuery({ queryKey: ['appointments', 'upcoming'], queryFn: () => listAppointments('upcoming') });
   const pastQuery = useQuery({ queryKey: ['appointments', 'past'], queryFn: () => listAppointments('past') });
   const prescriptionsQuery = useQuery({ queryKey: ['prescriptions'], queryFn: listPrescriptions });
+  const calendarQuery = useQuery({ queryKey: ['calendar-status'], queryFn: getCalendarStatus });
 
   const upcoming = upcomingQuery.data ?? [];
   const past = pastQuery.data ?? [];
@@ -146,14 +148,16 @@ export function PatientDashboardPage() {
             </div>
           </div>
 
-          <div style={{ background: 'var(--color-accent-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)' }}>
-            <p style={{ fontSize: 13, color: 'var(--color-accent-800)', margin: '0 0 var(--space-3)', textWrap: 'pretty' }}>
-              Connect your Google Calendar in Settings and your appointments will sync automatically — including changes and cancellations.
-            </p>
-            <Button as={Link} to="/settings">
-              Open Settings
-            </Button>
-          </div>
+          {!calendarQuery.data?.connected && (
+            <div style={{ background: 'var(--color-accent-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)' }}>
+              <p style={{ fontSize: 13, color: 'var(--color-accent-800)', margin: '0 0 var(--space-3)', textWrap: 'pretty' }}>
+                Connect your Google Calendar in Settings and your appointments will sync automatically — including changes and cancellations.
+              </p>
+              <Button as={Link} to="/settings">
+                Open Settings
+              </Button>
+            </div>
+          )}
         </aside>
       </div>
     </div>

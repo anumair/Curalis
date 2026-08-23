@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { cancelAppointment, getAppointment, getPostVisitSummary, rescheduleAppointment } from '../../api/appointments.js';
 import { getAvailability } from '../../api/doctors.js';
+import { getCalendarStatus } from '../../api/calendar.js';
 import { formatLongDate, formatTimeRange } from '../../lib/format.js';
 import { Card } from '../../components/ui/Card.jsx';
 import { Tag } from '../../components/ui/Tag.jsx';
@@ -165,6 +166,7 @@ export function AppointmentDetailsPage() {
     queryKey: ['appointment', appointmentId],
     queryFn: () => getAppointment(appointmentId),
   });
+  const calendarQuery = useQuery({ queryKey: ['calendar-status'], queryFn: getCalendarStatus });
 
   const isCompleted = appointment?.status === 'COMPLETED';
   const { data: visitSummary } = useQuery({
@@ -337,10 +339,16 @@ export function AppointmentDetailsPage() {
           )}
           <Card style={{ padding: 'var(--space-6)', gap: 6 }}>
             <h4 style={{ marginBottom: 2 }}>Calendar</h4>
-            <p style={{ fontSize: 13, opacity: 0.75, margin: 0 }}>Connect your Google Calendar in Settings to keep this in sync automatically.</p>
-            <Button as={Link} to="/settings" variant="secondary" style={{ alignSelf: 'flex-start', marginTop: 'var(--space-2)' }}>
-              Open Settings
-            </Button>
+            {calendarQuery.data?.connected ? (
+              <p style={{ fontSize: 13, opacity: 0.75, margin: 0 }}>Synced to your Google Calendar ({calendarQuery.data.googleEmail}).</p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, opacity: 0.75, margin: 0 }}>Connect your Google Calendar in Settings to keep this in sync automatically.</p>
+                <Button as={Link} to="/settings" variant="secondary" style={{ alignSelf: 'flex-start', marginTop: 'var(--space-2)' }}>
+                  Open Settings
+                </Button>
+              </>
+            )}
           </Card>
         </aside>
       </div>
