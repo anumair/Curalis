@@ -3,7 +3,13 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { validate } from '../../middleware/validate.js';
 import { requireAuth } from '../../middleware/requireAuth.js';
 import { requireRole } from '../../middleware/requireRole.js';
-import { appointmentIdParamSchema, holdAppointmentSchema, confirmAppointmentSchema } from './appointments.schema.js';
+import {
+  appointmentIdParamSchema,
+  holdAppointmentSchema,
+  confirmAppointmentSchema,
+  cancelAppointmentSchema,
+  rescheduleAppointmentSchema,
+} from './appointments.schema.js';
 import * as appointmentsController from './appointments.controller.js';
 
 export const appointmentsRouter = Router();
@@ -29,4 +35,20 @@ appointmentsRouter.post(
   validate(appointmentIdParamSchema, 'params'),
   validate(confirmAppointmentSchema),
   asyncHandler(appointmentsController.confirm)
+);
+appointmentsRouter.post(
+  '/appointments/:id/cancel',
+  requireAuth,
+  requireRole('PATIENT', 'DOCTOR', 'ADMIN'),
+  validate(appointmentIdParamSchema, 'params'),
+  validate(cancelAppointmentSchema),
+  asyncHandler(appointmentsController.cancel)
+);
+appointmentsRouter.patch(
+  '/appointments/:id/reschedule',
+  requireAuth,
+  requireRole('PATIENT'),
+  validate(appointmentIdParamSchema, 'params'),
+  validate(rescheduleAppointmentSchema),
+  asyncHandler(appointmentsController.reschedule)
 );

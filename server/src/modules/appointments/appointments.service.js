@@ -145,18 +145,68 @@ export async function holdSlot(patientId, { doctorId, startsAt: startsAtIso }) {
 // Clinical content never appears in a notification payload — only IDs,
 // names, and times (brief invariant on subject lines/calendar events,
 // applied here as a general policy for anything that could leak into an
-// inbox or a shared calendar).
-function bookingConfirmationOutboxRow({ recipient, appointmentId, doctorName, patientName, startsAtIso }) {
+// inbox or a shared calendar). Shared shape for booking/cancel/reschedule
+// notifications; only the type/subject/template/idempotency prefix differ.
+function notificationOutboxRow({ type, template, subjectPrefix, idempotencyPrefix, recipient, appointmentId, doctorName, patientName, startsAtIso }) {
   return {
-    type: 'BOOKING_CONFIRMATION',
+    type,
     recipientUserId: recipient.id,
     recipientEmail: recipient.email,
     appointmentId,
-    subject: `Appointment confirmed — ${doctorName}`,
-    template: 'booking_confirmation',
+    subject: `${subjectPrefix} — ${doctorName}`,
+    template,
     payload: { appointmentId, recipientName: recipient.fullName, doctorName, patientName, startsAt: startsAtIso },
-    idempotencyKey: `booking_confirmation:${appointmentId}:${recipient.id}`,
+    idempotencyKey: `${idempotencyPrefix}:${appointmentId}:${recipient.id}`,
   };
+}
+
+function bookingConfirmationOutboxRow(args) {
+  return notificationOutboxRow({
+    type: 'BOOKING_CONFIRMATION',
+    template: 'booking_confirmation',
+    subjectPrefix: 'Appointment confirmed',
+    idempotencyPrefix: 'booking_confirmation',
+    ...args,
+  });
+}
+
+function cancellationOutboxRow(args) {
+  return notificationOutboxRow({
+    type: 'CANCELLATION',
+    template: 'appointment_cancellation',
+    subjectPrefix: 'Appointment cancelled',
+    idempotencyPrefix: 'cancellation',
+    ...args,
+  });
+}
+
+function rescheduleOutboxRow(args) {
+  return notificationOutboxRow({
+    type: 'RESCHEDULE',
+    template: 'appointment_reschedule',
+    subjectPrefix: 'Appointment rescheduled',
+    idempotencyPrefix: 'reschedule',
+    ...args,
+  });
+}
+
+// Shared by confirm and reschedule — every CONFIRMED appointment gets a
+// 24h and 1h reminder scheduled relative to its own startsAt. A reminder
+// whose time has already passed is skipped rather than fired immediately;
+// see notification.worker.js for the complementary "is this appointment
+// still CONFIRMED at send time" check that makes this safe to leave
+// scheduled even across a later cancel/reschedule.
+async function scheduleAppointmentReminders(appointmentId, startsAt) {
+  const reminder24hAt = new Date(startsAt.getTime() - 24 * 60 * 60_000);
+  const reminder1hAt = new Date(startsAt.getTime() - 60 * 60_000);
+  const now = Date.now();
+
+  if (reminder24hAt.getTime() > now) {
+    await boss.sendAfter(QUEUES.APPT_REMINDER, { appointmentId, kind: '24H' }, reminder24hAt);
+  }
+  if (reminder1hAt.getTime() > now) {
+    await boss.sendAfter(QUEUES.APPT_REMINDER, { appointmentId, kind: '1H' }, reminder1hAt);
+  }
 }
 
 export async function confirmAppointment(patientId, appointmentId, { holdToken, symptomForm }) {
@@ -244,19 +294,219 @@ export async function confirmAppointment(patientId, appointmentId, { holdToken, 
   // sweepers pick them up. Never enqueue from inside the transaction.
   await boss.send(QUEUES.AI_PREVISIT, { appointmentId });
   await boss.send(QUEUES.CALENDAR_SYNC, { appointmentId, operation: 'CREATE' });
-
-  const reminder24hAt = new Date(result.startsAt.getTime() - 24 * 60 * 60_000);
-  const reminder1hAt = new Date(result.startsAt.getTime() - 60 * 60_000);
-  const now = Date.now();
-  // Skip a reminder whose scheduled time has already passed rather than
-  // firing it immediately — a "24 hours ahead" reminder for an appointment
-  // that's actually 2 hours away doesn't make sense.
-  if (reminder24hAt.getTime() > now) {
-    await boss.sendAfter(QUEUES.APPT_REMINDER, { appointmentId, kind: '24H' }, reminder24hAt);
-  }
-  if (reminder1hAt.getTime() > now) {
-    await boss.sendAfter(QUEUES.APPT_REMINDER, { appointmentId, kind: '1H' }, reminder1hAt);
-  }
+  await scheduleAppointmentReminders(appointmentId, result.startsAt);
 
   return { appointmentId };
+}
+
+// Who is cancelling determines the status, not the appointment's own
+// state — an admin cancelling is always "clinic-initiated" regardless of
+// which doctor/patient the appointment belongs to.
+function determineCancelledStatus(user, appointment) {
+  if (user.role === 'ADMIN') return 'CANCELLED_BY_CLINIC';
+  if (user.role === 'DOCTOR' && appointment.doctor_id === user.id) return 'CANCELLED_BY_DOCTOR';
+  if (user.role === 'PATIENT' && appointment.patient_id === user.id) return 'CANCELLED_BY_PATIENT';
+  return null;
+}
+
+export async function cancelAppointment(user, appointmentId, reason) {
+  const result = await prisma.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw`SELECT * FROM appointments WHERE id = ${appointmentId}::uuid FOR UPDATE`;
+    const appointment = rows[0];
+    if (!appointment) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
+
+    const cancelledStatus = determineCancelledStatus(user, appointment);
+    if (!cancelledStatus) {
+      throw new ApiError(403, 'FORBIDDEN', 'This appointment does not belong to you.');
+    }
+    if (appointment.status !== 'CONFIRMED') {
+      throw new ApiError(409, 'APPOINTMENT_NOT_CANCELLABLE', 'Only a confirmed appointment can be cancelled.');
+    }
+
+    await tx.appointment.update({
+      where: { id: appointmentId },
+      data: { status: cancelledStatus, cancelledAt: new Date(), cancelledById: user.id, cancellationReason: reason ?? null },
+    });
+
+    const [patient, doctor] = await Promise.all([
+      tx.user.findUnique({ where: { id: appointment.patient_id } }),
+      tx.user.findUnique({ where: { id: appointment.doctor_id } }),
+    ]);
+    const startsAtIso = new Date(appointment.starts_at).toISOString();
+
+    await tx.notificationOutbox.createMany({
+      data: [
+        cancellationOutboxRow({ recipient: patient, appointmentId, doctorName: doctor.fullName, patientName: patient.fullName, startsAtIso }),
+        cancellationOutboxRow({ recipient: doctor, appointmentId, doctorName: doctor.fullName, patientName: patient.fullName, startsAtIso }),
+      ],
+    });
+
+    // Freeing the slot needs no extra work — the exclusion constraint's
+    // WHERE clause only matches HELD/CONFIRMED, so this row simply stops
+    // blocking the moment its status changes.
+    await tx.calendarEvent.updateMany({ where: { appointmentId }, data: { syncStatus: 'PENDING', lastOperation: 'DELETE' } });
+
+    await tx.auditLog.create({
+      data: {
+        actorUserId: user.id,
+        action: 'APPOINTMENT_CANCELLED',
+        entityType: 'Appointment',
+        entityId: appointmentId,
+        metadata: { doctorId: appointment.doctor_id, reason: reason ?? null },
+      },
+    });
+
+    return { status: cancelledStatus };
+  });
+
+  await boss.send(QUEUES.CALENDAR_SYNC, { appointmentId, operation: 'DELETE' });
+
+  return { appointmentId, status: result.status };
+}
+
+// One transaction end to end — cancel-then-book is forbidden by the brief
+// specifically because a failure between the two steps would strand the
+// patient with no slot at all. Reuses the exact same advisory lock,
+// working-hours check, and leave check as holdSlot, since a reschedule
+// target must satisfy every constraint a fresh booking would.
+export async function rescheduleAppointment(patientId, appointmentId, newStartsAtIso) {
+  const newStartsAt = new Date(newStartsAtIso);
+
+  const oldRows = await prisma.$queryRaw`SELECT * FROM appointments WHERE id = ${appointmentId}::uuid`;
+  const oldAppointment = oldRows[0];
+  if (!oldAppointment) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
+  if (oldAppointment.patient_id !== patientId) {
+    throw new ApiError(403, 'FORBIDDEN', 'This appointment does not belong to you.');
+  }
+
+  const doctorId = oldAppointment.doctor_id;
+  const doctorForPrecheck = await loadDoctorForBooking(prisma, doctorId);
+  assertLeadTimeAndHorizon(newStartsAt, doctorForPrecheck);
+  const newEndsAt = new Date(newStartsAt.getTime() + doctorForPrecheck.slotDurationMin * 60_000);
+
+  const result = await prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(1, hashtext(${doctorId}))`;
+
+      const rows = await tx.$queryRaw`SELECT * FROM appointments WHERE id = ${appointmentId}::uuid FOR UPDATE`;
+      const oldAppt = rows[0];
+      if (!oldAppt) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
+      if (oldAppt.patient_id !== patientId) {
+        throw new ApiError(403, 'FORBIDDEN', 'This appointment does not belong to you.');
+      }
+      if (oldAppt.status !== 'CONFIRMED') {
+        throw new ApiError(409, 'APPOINTMENT_NOT_RESCHEDULABLE', 'Only a confirmed appointment can be rescheduled.');
+      }
+      if (new Date(oldAppt.starts_at) <= new Date()) {
+        throw new ApiError(409, 'APPOINTMENT_IN_PAST', 'Past appointments cannot be rescheduled.');
+      }
+
+      const doctor = await loadDoctorForBooking(tx, doctorId);
+      if (!doctor.isAcceptingPatients || !doctor.user.isActive) {
+        throw new ApiError(409, 'DOCTOR_UNAVAILABLE', 'This doctor is not currently accepting bookings.');
+      }
+
+      await assertWithinWorkingHours(tx, doctorId, newStartsAt, doctor.user.timezone, doctor.slotDurationMin);
+
+      const onLeave = await tx.doctorLeave.findFirst({
+        where: { doctorId, startsAt: { lt: newEndsAt }, endsAt: { gt: newStartsAt } },
+      });
+      if (onLeave) throw new ApiError(409, 'DOCTOR_ON_LEAVE', 'The doctor is unavailable at that time.');
+
+      await tx.$executeRaw`
+        UPDATE appointments
+           SET status = 'EXPIRED'
+         WHERE doctor_id = ${doctorId}::uuid
+           AND status = 'HELD'
+           AND hold_expires_at < now()
+           AND tstzrange(starts_at, ends_at, '[)') && tstzrange(${newStartsAt}, ${newEndsAt}, '[)')
+      `;
+
+      const newAppointmentId = crypto.randomUUID();
+
+      // Same raw-SQL reasoning as holdSlot: this is the one INSERT that
+      // must let a genuine exclusion-constraint conflict surface as a real
+      // SQLSTATE, which Prisma's typed create() cannot do.
+      await tx.$executeRaw`
+        INSERT INTO appointments (id, doctor_id, patient_id, starts_at, ends_at, status, rescheduled_from_id, created_at, updated_at)
+        VALUES (${newAppointmentId}::uuid, ${doctorId}::uuid, ${patientId}::uuid, ${newStartsAt}, ${newEndsAt}, 'CONFIRMED', ${appointmentId}::uuid, now(), now())
+      `;
+
+      await tx.appointment.update({ where: { id: appointmentId }, data: { status: 'RESCHEDULED' } });
+
+      // Carries the patient's existing intake/triage context forward onto
+      // the new appointment row rather than making them refill anything.
+      await tx.symptomForm.update({ where: { appointmentId }, data: { appointmentId: newAppointmentId } });
+      await tx.aiSummary.updateMany({ where: { appointmentId, type: 'PRE_VISIT' }, data: { appointmentId: newAppointmentId } });
+
+      // Carrying over providerEventId (not re-creating) is what lets the
+      // calendar worker PATCH the existing Google event instead of
+      // deleting and recreating it — brief §8: "attendees get a clean
+      // 'event updated' notification and the event history survives."
+      const oldCalendarEvents = await tx.calendarEvent.findMany({ where: { appointmentId } });
+      if (oldCalendarEvents.length > 0) {
+        await tx.calendarEvent.createMany({
+          data: oldCalendarEvents.map((event) => ({
+            appointmentId: newAppointmentId,
+            userId: event.userId,
+            providerEventId: event.providerEventId,
+            calendarId: event.calendarId,
+            syncStatus: 'PENDING',
+            lastOperation: 'UPDATE',
+          })),
+        });
+      }
+
+      const [patient, doctorUser] = await Promise.all([
+        tx.user.findUnique({ where: { id: patientId } }),
+        tx.user.findUnique({ where: { id: doctorId } }),
+      ]);
+      const newStartsAtIsoStr = newStartsAt.toISOString();
+
+      await tx.notificationOutbox.createMany({
+        data: [
+          rescheduleOutboxRow({
+            recipient: patient,
+            appointmentId: newAppointmentId,
+            doctorName: doctorUser.fullName,
+            patientName: patient.fullName,
+            startsAtIso: newStartsAtIsoStr,
+          }),
+          rescheduleOutboxRow({
+            recipient: doctorUser,
+            appointmentId: newAppointmentId,
+            doctorName: doctorUser.fullName,
+            patientName: patient.fullName,
+            startsAtIso: newStartsAtIsoStr,
+          }),
+        ],
+      });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: patientId,
+          action: 'APPOINTMENT_RESCHEDULED',
+          entityType: 'Appointment',
+          entityId: newAppointmentId,
+          metadata: { doctorId, oldAppointmentId: appointmentId, newStartsAt: newStartsAtIsoStr },
+        },
+      });
+
+      return { newAppointmentId, newStartsAt, newEndsAt };
+    },
+    // Same reasoning as holdSlot — this shares the exact same per-doctor
+    // advisory lock, so it can queue behind concurrent bookings/reschedules
+    // for the same doctor under real network latency to a remote DB.
+    { maxWait: 15_000, timeout: 15_000 }
+  );
+
+  await boss.send(QUEUES.CALENDAR_SYNC, { appointmentId: result.newAppointmentId, operation: 'UPDATE' });
+  // Not shown in the brief's §8 pseudocode, but the new appointment
+  // obviously still needs its own reminders — the old appointment's
+  // reminder jobs are deliberately left in place (they'll no-op at send
+  // time once they see status='RESCHEDULED', per §11), they don't cover
+  // the new time at all.
+  await scheduleAppointmentReminders(result.newAppointmentId, result.newStartsAt);
+
+  return { appointmentId: result.newAppointmentId, startsAt: result.newStartsAt, endsAt: result.newEndsAt };
 }

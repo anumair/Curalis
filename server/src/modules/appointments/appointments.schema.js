@@ -23,3 +23,11 @@ export const confirmAppointmentSchema = z.object({
   holdToken: z.string().min(1, 'holdToken is required'),
   symptomForm: symptomFormSchema,
 });
+
+export const cancelAppointmentSchema = z.object({
+  reason: z.string().min(1).optional(),
+});
+
+export const rescheduleAppointmentSchema = z.object({
+  newStartsAt: z.string().datetime({ message: 'newStartsAt must be an ISO 8601 UTC datetime' }),
+});

@@ -16,3 +16,17 @@ export async function confirm(req, res) {
   const result = await appointmentsService.confirmAppointment(req.user.id, req.params.id, req.body);
   res.json({ appointmentId: result.appointmentId, status: 'CONFIRMED' });
 }
+
+export async function cancel(req, res) {
+  const result = await appointmentsService.cancelAppointment(req.user, req.params.id, req.body.reason);
+  res.json(result);
+}
+
+export async function reschedule(req, res) {
+  const result = await appointmentsService.rescheduleAppointment(req.user.id, req.params.id, req.body.newStartsAt);
+  res.json({
+    appointmentId: result.appointmentId,
+    startsAt: result.startsAt.toISOString(),
+    endsAt: result.endsAt.toISOString(),
+  });
+}

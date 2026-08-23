@@ -9,6 +9,18 @@ const TEMPLATES = {
        <strong>${new Date(payload.startsAt).toUTCString()}</strong>.</p>
     <p>— City Health Clinic</p>
   `,
+  appointment_cancellation: (payload) => `
+    <p>Hi ${payload.recipientName ?? ''},</p>
+    <p>The appointment between ${payload.patientName} and ${payload.doctorName} scheduled for
+       <strong>${new Date(payload.startsAt).toUTCString()}</strong> has been cancelled.</p>
+    <p>— City Health Clinic</p>
+  `,
+  appointment_reschedule: (payload) => `
+    <p>Hi ${payload.recipientName ?? ''},</p>
+    <p>The appointment between ${payload.patientName} and ${payload.doctorName} has been moved to
+       <strong>${new Date(payload.startsAt).toUTCString()}</strong>.</p>
+    <p>— City Health Clinic</p>
+  `,
 };
 
 export function renderTemplate(templateKey, payload) {
