@@ -21,3 +21,20 @@ export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1, 'Password is required'),
 });
+
+// Self-service profile edit — every role, but deliberately no email/role
+// here. Email doubles as login identity (changing it is a bigger, riskier
+// operation than this form needs to support) and role is never
+// self-assignable.
+export const updateMeSchema = z
+  .object({
+    fullName: z.string().min(1).optional(),
+    phone: z.string().optional(),
+    timezone: z.string().refine(isValidTimeZone, 'Invalid IANA timezone').optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, { message: 'At least one field must be provided' });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});

@@ -165,3 +165,22 @@ export async function getUserById(userId) {
   if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found.');
   return user;
 }
+
+export async function updateOwnProfile(userId, data) {
+  return prisma.user.update({ where: { id: userId }, data });
+}
+
+export async function changeOwnPassword(userId, currentPassword, newPassword) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, 'NOT_FOUND', 'User not found.');
+
+  const valid = await comparePassword(currentPassword, user.passwordHash);
+  if (!valid) throw new ApiError(401, 'INVALID_CREDENTIALS', 'Current password is incorrect.');
+
+  const passwordHash = await hashPassword(newPassword);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  // A leaked session shouldn't survive its owner changing the password —
+  // same defensive posture as the reuse-detection revoke-all elsewhere in
+  // this file.
+  await revokeAllRefreshTokens(userId);
+}

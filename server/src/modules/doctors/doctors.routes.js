@@ -61,6 +61,14 @@ doctorsSelfRouter.get(
 // appointments.routes.js for a case where the same pattern caused a real
 // cross-router 403).
 export const doctorsAdminRouter = Router();
+doctorsAdminRouter.get('/doctors', requireAuth, requireRole('ADMIN'), asyncHandler(doctorsController.adminListDoctors));
+doctorsAdminRouter.get(
+  '/doctors/:id',
+  requireAuth,
+  requireRole('ADMIN'),
+  validate(doctorIdParamSchema, 'params'),
+  asyncHandler(doctorsController.adminGetDoctorById)
+);
 doctorsAdminRouter.post(
   '/doctors',
   requireAuth,

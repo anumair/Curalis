@@ -238,6 +238,109 @@ export async function getMyWorkingHoursAndLeave(doctorId) {
   return { workingHours, leaves };
 }
 
+// Three fixed-cost queries regardless of doctor count, rather than N+1 per
+// doctor — the dashboard's doctor table and "today across the clinic"
+// cards both read from this one call.
+export async function listAllDoctorsForAdmin() {
+  const now = new Date();
+  const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60_000);
+  const todayStart = new Date(now);
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60_000);
+
+  const doctors = await prisma.doctorProfile.findMany({
+    include: {
+      user: { select: { id: true, fullName: true, email: true, isActive: true } },
+      workingHours: true,
+      leaves: { where: { startsAt: { lte: now }, endsAt: { gt: now } } },
+    },
+    orderBy: { user: { fullName: 'asc' } },
+  });
+  const doctorIds = doctors.map((d) => d.userId);
+
+  const next7 = await prisma.appointment.groupBy({
+    by: ['doctorId'],
+    where: { doctorId: { in: doctorIds }, status: 'CONFIRMED', startsAt: { gte: now, lt: in7Days } },
+    _count: { id: true },
+  });
+  const next7Map = new Map(next7.map((row) => [row.doctorId, row._count.id]));
+
+  const todayAppointments = await prisma.appointment.findMany({
+    where: { doctorId: { in: doctorIds }, status: { in: ['CONFIRMED', 'COMPLETED'] }, startsAt: { gte: todayStart, lt: todayEnd } },
+    select: { doctorId: true, startsAt: true },
+    orderBy: { startsAt: 'asc' },
+  });
+  const todayMap = new Map();
+  for (const appt of todayAppointments) {
+    const entry = todayMap.get(appt.doctorId) ?? { count: 0, first: null, last: null };
+    entry.count += 1;
+    entry.first ??= appt.startsAt;
+    entry.last = appt.startsAt;
+    todayMap.set(appt.doctorId, entry);
+  }
+
+  return doctors.map((doctor) => ({
+    id: doctor.userId,
+    fullName: doctor.user.fullName,
+    email: doctor.user.email,
+    specialisation: doctor.specialisation,
+    qualification: doctor.qualification,
+    slotDurationMin: doctor.slotDurationMin,
+    isAcceptingPatients: doctor.isAcceptingPatients,
+    isActive: doctor.user.isActive,
+    workingDays: [...new Set(doctor.workingHours.map((w) => w.dayOfWeek))].sort((a, b) => a - b),
+    appointmentsNext7Days: next7Map.get(doctor.userId) ?? 0,
+    onLeaveToday: doctor.leaves.length > 0,
+    today: todayMap.get(doctor.userId) ?? { count: 0, first: null, last: null },
+  }));
+}
+
+export async function getDoctorDetailForAdmin(doctorId) {
+  const doctor = await prisma.doctorProfile.findUnique({
+    where: { userId: doctorId },
+    include: {
+      user: { select: { id: true, fullName: true, email: true, phone: true, timezone: true, isActive: true } },
+      workingHours: { orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }] },
+      leaves: { where: { endsAt: { gt: new Date() } }, orderBy: { startsAt: 'asc' } },
+    },
+  });
+  if (!doctor) throw new ApiError(404, 'NOT_FOUND', 'Doctor not found.');
+
+  const upcoming = await prisma.appointment.findMany({
+    where: { doctorId, status: 'CONFIRMED', startsAt: { gt: new Date() } },
+    include: { patient: { include: { user: { select: { fullName: true } } } } },
+    orderBy: { startsAt: 'asc' },
+    take: 20,
+  });
+
+  return {
+    id: doctor.userId,
+    fullName: doctor.user.fullName,
+    email: doctor.user.email,
+    phone: doctor.user.phone,
+    timezone: doctor.user.timezone,
+    isActive: doctor.user.isActive,
+    specialisation: doctor.specialisation,
+    qualification: doctor.qualification,
+    licenseNumber: doctor.licenseNumber,
+    bio: doctor.bio,
+    consultationFee: doctor.consultationFee,
+    slotDurationMin: doctor.slotDurationMin,
+    bookingHorizonDays: doctor.bookingHorizonDays,
+    minLeadTimeMin: doctor.minLeadTimeMin,
+    isAcceptingPatients: doctor.isAcceptingPatients,
+    workingHours: doctor.workingHours,
+    leaves: doctor.leaves,
+    upcomingAppointments: upcoming.map((appointment) => ({
+      id: appointment.id,
+      startsAt: appointment.startsAt,
+      endsAt: appointment.endsAt,
+      patientName: appointment.patient.user.fullName,
+      status: appointment.status,
+    })),
+  };
+}
+
 export async function listSpecialisations() {
   const rows = await prisma.doctorProfile.findMany({
     where: { isAcceptingPatients: true },

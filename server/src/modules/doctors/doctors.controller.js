@@ -47,6 +47,16 @@ export async function getMyWorkingHoursAndLeave(req, res) {
   res.json(result);
 }
 
+export async function adminListDoctors(req, res) {
+  const doctors = await doctorsService.listAllDoctorsForAdmin();
+  res.json({ doctors });
+}
+
+export async function adminGetDoctorById(req, res) {
+  const doctor = await doctorsService.getDoctorDetailForAdmin(req.params.id);
+  res.json({ doctor });
+}
+
 export async function adminCreateDoctor(req, res) {
   const { user, temporaryPassword } = await doctorsService.createDoctor(req.body);
   res.status(201).json({ user: toPublicUser(user), temporaryPassword });

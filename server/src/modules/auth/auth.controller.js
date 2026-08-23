@@ -59,3 +59,13 @@ export async function me(req, res) {
   }
   res.json({ user: response });
 }
+
+export async function updateMe(req, res) {
+  const user = await authService.updateOwnProfile(req.user.id, req.body);
+  res.json({ user: toPublicUser(user) });
+}
+
+export async function changePassword(req, res) {
+  await authService.changeOwnPassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+  res.status(204).send();
+}

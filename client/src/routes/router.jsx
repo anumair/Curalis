@@ -11,6 +11,9 @@ import { BookAppointmentPage } from '@/features/booking/BookAppointmentPage.jsx'
 import { PrescriptionsPage } from '@/features/prescriptions/PrescriptionsPage.jsx';
 import { DoctorDashboardPage } from '@/features/doctor/DoctorDashboardPage.jsx';
 import { ConsultationPage } from '@/features/doctor/ConsultationPage.jsx';
+import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage.jsx';
+import { AddManageDoctorPage } from '@/features/admin/AddManageDoctorPage.jsx';
+import { NotificationLogPage } from '@/features/admin/NotificationLogPage.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import { ComingSoon } from './ComingSoon.jsx';
 
@@ -56,10 +59,10 @@ export const router = createBrowserRouter([
           {
             element: <ProtectedRoute roles={['ADMIN']} />,
             children: [
-              { path: '/admin', element: <ComingSoon label="Admin dashboard" /> },
-              { path: '/admin/doctors/new', element: <ComingSoon label="Add a doctor" /> },
-              { path: '/admin/doctors/:doctorId', element: <ComingSoon label="Manage doctor" /> },
-              { path: '/admin/notifications', element: <ComingSoon label="Notification log" /> },
+              { path: '/admin', element: <AdminDashboardPage /> },
+              { path: '/admin/doctors/new', element: <AddManageDoctorPage /> },
+              { path: '/admin/doctors/:doctorId', element: <AddManageDoctorPage /> },
+              { path: '/admin/notifications', element: <NotificationLogPage /> },
             ],
           },
         ],

@@ -15,3 +15,11 @@ export function logout() {
 export function getMe() {
   return api.get('/auth/me').then((res) => res.data);
 }
+
+export function updateMe(data) {
+  return api.patch('/auth/me', data).then((res) => res.data);
+}
+
+export function changePassword(currentPassword, newPassword) {
+  return api.post('/auth/me/password', { currentPassword, newPassword });
+}
