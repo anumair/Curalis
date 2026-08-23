@@ -4,6 +4,8 @@ import { AuthLayout } from '@/components/layout/AuthLayout.jsx';
 import { SignInPage } from '@/features/auth/SignInPage.jsx';
 import { SignUpPage } from '@/features/auth/SignUpPage.jsx';
 import { AppShell } from '@/components/layout/AppShell.jsx';
+import { PatientDashboardPage } from '@/features/dashboard/PatientDashboardPage.jsx';
+import { AppointmentDetailsPage } from '@/features/appointments/AppointmentDetailsPage.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import { ComingSoon } from './ComingSoon.jsx';
 
@@ -28,10 +30,10 @@ export const router = createBrowserRouter([
           {
             element: <ProtectedRoute roles={['PATIENT']} />,
             children: [
-              { path: '/app', element: <ComingSoon label="Dashboard" /> },
+              { path: '/app', element: <PatientDashboardPage /> },
               { path: '/doctors', element: <ComingSoon label="Find a doctor" /> },
               { path: '/book/:doctorId', element: <ComingSoon label="Book an appointment" /> },
-              { path: '/appointments/:appointmentId', element: <ComingSoon label="Appointment details" /> },
+              { path: '/appointments/:appointmentId', element: <AppointmentDetailsPage /> },
               { path: '/prescriptions', element: <ComingSoon label="Prescriptions" /> },
             ],
           },
