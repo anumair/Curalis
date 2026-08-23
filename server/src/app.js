@@ -9,6 +9,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import { doctorsPublicRouter, doctorsAdminRouter } from './modules/doctors/doctors.routes.js';
 import { availabilityRouter } from './modules/availability/availability.routes.js';
+import { appointmentsRouter } from './modules/appointments/appointments.routes.js';
 
 export const app = express();
 
@@ -26,9 +27,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api', doctorsPublicRouter);
 app.use('/api/admin', doctorsAdminRouter);
 app.use('/api', availabilityRouter);
+app.use('/api', appointmentsRouter);
 
 // Remaining module routers are mounted here as each one is built
-// (appointments, leave, clinical, ai, notifications, calendar).
+// (leave, clinical, ai, notifications, calendar).
 
 app.use(notFoundHandler);
 app.use(errorHandler);

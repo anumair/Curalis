@@ -45,3 +45,23 @@ export function minutesToTimeString(totalMinutes) {
   const minutes = (totalMinutes % 60).toString().padStart(2, '0');
   return `${hours}:${minutes}:00`;
 }
+
+// Inverse direction from the above: given a real UTC instant, what calendar
+// date and minute-of-day does it land on as experienced in this timezone?
+// Used to check whether a requested booking instant aligns with the
+// doctor's local working-hours grid.
+export function zonedDateAndMinuteOfDay(instant, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant);
+  const get = (type) => parts.find((part) => part.type === type).value;
+  const dateString = `${get('year')}-${get('month')}-${get('day')}`;
+  const minuteOfDay = Number(get('hour')) * 60 + Number(get('minute'));
+  return { dateString, minuteOfDay };
+}

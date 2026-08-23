@@ -1,6 +1,6 @@
 import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
-import { boss } from './lib/boss.js';
+import { boss, ensureQueues } from './lib/boss.js';
 import './lib/prisma.js';
 
 // Jobs are registered here as each one is built, per the brief's build order:
@@ -10,6 +10,7 @@ import './lib/prisma.js';
 
 async function start() {
   await boss.start();
+  await ensureQueues();
   logger.info(`Worker started (${env.NODE_ENV})`);
 }
 
