@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { isValidTimeZone } from '../../utils/time.js';
+
+const timezoneSchema = z.string().refine(isValidTimeZone, 'Invalid IANA timezone');
 
 export const doctorIdParamSchema = z.object({
   id: z.string().uuid('Invalid doctor id'),
@@ -16,7 +19,7 @@ export const createDoctorSchema = z.object({
   email: z.string().email(),
   fullName: z.string().min(1, 'Full name is required'),
   phone: z.string().optional(),
-  timezone: z.string().optional(),
+  timezone: timezoneSchema.optional(),
   specialisation: z.string().min(1, 'Specialisation is required'),
   qualification: z.string().optional(),
   licenseNumber: z.string().optional(),
@@ -32,7 +35,7 @@ export const updateDoctorSchema = z
   .object({
     fullName: z.string().min(1).optional(),
     phone: z.string().optional(),
-    timezone: z.string().optional(),
+    timezone: timezoneSchema.optional(),
     isActive: z.boolean().optional(),
     specialisation: z.string().min(1).optional(),
     qualification: z.string().optional(),
