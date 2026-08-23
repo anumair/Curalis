@@ -61,6 +61,19 @@ function materialiseItemReminders({ prescriptionItemId, patientId, startDateStr,
   return rows;
 }
 
+// A prescription is unique per appointment (see the schema note on
+// Prescription.appointmentId) — there is no update path, so the doctor
+// view needs a read to know whether one already exists before deciding
+// whether "submit" is even allowed.
+export async function getPrescriptionForAppointment(doctorId, appointmentId) {
+  const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+  if (!appointment) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');
+  if (appointment.doctorId !== doctorId) {
+    throw new ApiError(403, 'FORBIDDEN', 'This appointment does not belong to you.');
+  }
+  return prisma.prescription.findUnique({ where: { appointmentId }, include: { items: true } });
+}
+
 export async function submitPrescription(doctorId, appointmentId, body) {
   const appointment = await prisma.appointment.findUnique({ where: { id: appointmentId } });
   if (!appointment) throw new ApiError(404, 'NOT_FOUND', 'Appointment not found.');

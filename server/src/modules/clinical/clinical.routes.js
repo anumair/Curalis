@@ -32,6 +32,14 @@ clinicalRouter.get(
   asyncHandler(clinicalController.getPostVisitSummary)
 );
 
+clinicalRouter.get(
+  '/appointments/:id/prescription',
+  requireAuth,
+  requireRole('DOCTOR'),
+  validate(appointmentIdParamSchema, 'params'),
+  asyncHandler(clinicalController.getPrescriptionForAppointment)
+);
+
 clinicalRouter.post(
   '/appointments/:id/prescription',
   requireAuth,

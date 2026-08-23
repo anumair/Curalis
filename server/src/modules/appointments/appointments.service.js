@@ -522,6 +522,11 @@ export async function rescheduleAppointment(patientId, appointmentId, newStartsA
 // `user` relation.
 const DOCTOR_SUMMARY_INCLUDE = { include: { user: { select: { id: true, fullName: true } } } };
 const PATIENT_SUMMARY_INCLUDE = { include: { user: { select: { id: true, fullName: true } } } };
+// Detail view only (getAppointmentById) — the doctor treating this
+// appointment needs this clinical context; a plain list row doesn't.
+const PATIENT_DETAIL_INCLUDE = {
+  include: { user: { select: { id: true, fullName: true, email: true, phone: true } } },
+};
 
 function toAppointmentSummary(appointment) {
   return {
@@ -570,7 +575,7 @@ export async function getAppointmentById(user, appointmentId) {
     where: { id: appointmentId },
     include: {
       doctor: DOCTOR_SUMMARY_INCLUDE,
-      patient: PATIENT_SUMMARY_INCLUDE,
+      patient: PATIENT_DETAIL_INCLUDE,
       symptomForm: true,
     },
   });
@@ -595,7 +600,15 @@ export async function getAppointmentById(user, appointmentId) {
       fullName: appointment.doctor.user.fullName,
       specialisation: appointment.doctor.specialisation,
     },
-    patient: { id: appointment.patient.userId, fullName: appointment.patient.user.fullName },
+    patient: {
+      id: appointment.patient.userId,
+      fullName: appointment.patient.user.fullName,
+      email: appointment.patient.user.email,
+      phone: appointment.patient.user.phone,
+      dateOfBirth: appointment.patient.dateOfBirth,
+      gender: appointment.patient.gender,
+      bloodGroup: appointment.patient.bloodGroup,
+    },
     symptomForm: appointment.symptomForm,
   };
 }

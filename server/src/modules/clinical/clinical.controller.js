@@ -10,6 +10,11 @@ export async function getPostVisitSummary(req, res) {
   res.json(result);
 }
 
+export async function getPrescriptionForAppointment(req, res) {
+  const prescription = await clinicalService.getPrescriptionForAppointment(req.user.id, req.params.id);
+  res.json({ prescription });
+}
+
 export async function submitPrescription(req, res) {
   const result = await clinicalService.submitPrescription(req.user.id, req.params.id, req.body);
   res.status(201).json(result);
