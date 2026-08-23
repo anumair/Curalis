@@ -18,20 +18,31 @@ export async function registerPatient({ email, password, fullName, phone, timezo
 
   const passwordHash = await hashPassword(password);
 
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        email: normalisedEmail,
-        passwordHash,
-        fullName,
-        phone,
-        role: 'PATIENT',
-        ...(timezone ? { timezone } : {}),
-      },
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: normalisedEmail,
+          passwordHash,
+          fullName,
+          phone,
+          role: 'PATIENT',
+          ...(timezone ? { timezone } : {}),
+        },
+      });
+      await tx.patientProfile.create({ data: { userId: user.id } });
+      return user;
     });
-    await tx.patientProfile.create({ data: { userId: user.id } });
-    return user;
-  });
+  } catch (err) {
+    // The findUnique above only catches the common case — two registrations
+    // for the same address landing in the same instant both pass it and
+    // race to the DB's unique constraint. Give that race the same error
+    // code as the pre-check instead of a generic P2002 DUPLICATE.
+    if (err.code === 'P2002') {
+      throw new ApiError(409, 'EMAIL_TAKEN', 'An account with that email already exists.');
+    }
+    throw err;
+  }
 }
 
 export async function validateCredentials(email, password) {
@@ -108,12 +119,27 @@ export async function rotateRefreshToken(rawToken, meta) {
     throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Session expired, please log in again.');
   }
 
+  // Atomically claim this token for rotation — the WHERE clause only
+  // matches a row still unrevoked at write time. Two concurrent refresh
+  // requests presenting the same token both pass the read above (both see
+  // revokedAt = null a moment ago); without this conditional write, both
+  // would rotate successfully and the reuse-detection guarantee above
+  // would never fire. Whichever request loses this race gets count = 0
+  // here and is treated exactly like presenting an already-revoked token.
+  const claim = await prisma.refreshToken.updateMany({
+    where: { id: stored.id, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+
+  if (claim.count === 0) {
+    await revokeAllRefreshTokens(stored.userId);
+    throw new ApiError(401, 'REFRESH_TOKEN_REUSED', 'Session invalidated for security. Please log in again.');
+  }
+
   const user = await prisma.user.findUnique({ where: { id: stored.userId } });
   if (!user || !user.isActive) {
     throw new ApiError(401, 'INVALID_REFRESH_TOKEN', 'Session expired, please log in again.');
   }
-
-  await prisma.refreshToken.update({ where: { id: stored.id }, data: { revokedAt: new Date() } });
 
   return issueTokenPair(user, meta);
 }

@@ -11,7 +11,7 @@ export function signAccessToken(user) {
 }
 
 export function verifyAccessToken(token) {
-  return jwt.verify(token, env.JWT_ACCESS_SECRET);
+  return jwt.verify(token, env.JWT_ACCESS_SECRET, { algorithms: ['HS256'] });
 }
 
 // jti makes every issued refresh token unique even if two were requested
@@ -26,7 +26,7 @@ export function signRefreshToken(user) {
 }
 
 export function verifyRefreshToken(token) {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET);
+  return jwt.verify(token, env.JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
 }
 
 // The raw JWT is never stored — only its hash, so a DB read alone can't
