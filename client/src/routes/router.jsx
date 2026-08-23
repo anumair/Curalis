@@ -9,6 +9,7 @@ import { AppointmentDetailsPage } from '@/features/appointments/AppointmentDetai
 import { FindDoctorPage } from '@/features/doctors/FindDoctorPage.jsx';
 import { BookAppointmentPage } from '@/features/booking/BookAppointmentPage.jsx';
 import { PrescriptionsPage } from '@/features/prescriptions/PrescriptionsPage.jsx';
+import { DoctorDashboardPage } from '@/features/doctor/DoctorDashboardPage.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import { ComingSoon } from './ComingSoon.jsx';
 
@@ -45,7 +46,7 @@ export const router = createBrowserRouter([
           {
             element: <ProtectedRoute roles={['DOCTOR']} />,
             children: [
-              { path: '/doctor', element: <ComingSoon label="Doctor dashboard" /> },
+              { path: '/doctor', element: <DoctorDashboardPage /> },
               { path: '/doctor/consultations/:appointmentId', element: <ComingSoon label="Consultation" /> },
             ],
           },

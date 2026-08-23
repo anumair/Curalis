@@ -7,7 +7,7 @@ import { env } from './config/env.js';
 import { logger } from './lib/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './modules/auth/auth.routes.js';
-import { doctorsPublicRouter, doctorsAdminRouter } from './modules/doctors/doctors.routes.js';
+import { doctorsPublicRouter, doctorsSelfRouter, doctorsAdminRouter } from './modules/doctors/doctors.routes.js';
 import { availabilityRouter } from './modules/availability/availability.routes.js';
 import { appointmentsRouter } from './modules/appointments/appointments.routes.js';
 import { notificationsAdminRouter } from './modules/notifications/notifications.routes.js';
@@ -30,6 +30,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api', doctorsPublicRouter);
+app.use('/api', doctorsSelfRouter);
 app.use('/api/admin', doctorsAdminRouter);
 app.use('/api', availabilityRouter);
 app.use('/api', appointmentsRouter);

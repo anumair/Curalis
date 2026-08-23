@@ -1,6 +1,8 @@
+import { fromZonedTime } from 'date-fns-tz';
 import { prisma } from '../../lib/prisma.js';
 import { hashPassword, generateTemporaryPassword } from '../../utils/password.js';
 import { ApiError } from '../../utils/errors.js';
+import { addDaysToDateString } from '../../utils/time.js';
 
 const PAGE_SIZE = 20;
 
@@ -168,6 +170,72 @@ export async function getDoctorById(doctorId) {
   });
   if (!doctor) throw new ApiError(404, 'NOT_FOUND', 'Doctor not found.');
   return doctor;
+}
+
+function computeAge(dateOfBirth) {
+  return Math.floor((Date.now() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+}
+
+export async function getMySchedule(doctorId, date) {
+  const doctor = await prisma.doctorProfile.findUnique({ where: { userId: doctorId }, include: { user: { select: { timezone: true } } } });
+  if (!doctor) throw new ApiError(404, 'NOT_FOUND', 'Doctor not found.');
+
+  const timezone = doctor.user.timezone;
+  const nextDate = addDaysToDateString(date, 1);
+  const dayStartUtc = fromZonedTime(`${date}T00:00:00`, timezone);
+  const dayEndUtc = fromZonedTime(`${nextDate}T00:00:00`, timezone);
+
+  const appointments = await prisma.appointment.findMany({
+    where: { doctorId, startsAt: { gte: dayStartUtc, lt: dayEndUtc }, status: { in: ['CONFIRMED', 'COMPLETED'] } },
+    include: {
+      patient: { include: { user: { select: { fullName: true } } } },
+      symptomForm: true,
+      aiSummaries: { where: { type: 'PRE_VISIT' } },
+    },
+    orderBy: { startsAt: 'asc' },
+  });
+
+  return appointments.map((appointment) => {
+    const preVisit = appointment.aiSummaries[0];
+    return {
+      id: appointment.id,
+      startsAt: appointment.startsAt,
+      endsAt: appointment.endsAt,
+      status: appointment.status,
+      patient: {
+        fullName: appointment.patient.user.fullName,
+        age: appointment.patient.dateOfBirth ? computeAge(appointment.patient.dateOfBirth) : null,
+        gender: appointment.patient.gender,
+      },
+      complaint: preVisit?.payload?.chiefComplaint ?? appointment.symptomForm?.symptoms ?? null,
+      urgency: preVisit?.urgency ?? null,
+    };
+  });
+}
+
+// A visit "needs notes" once its slot has passed but it's still CONFIRMED
+// — COMPLETED means the note was already submitted (submitVisitNote is
+// what makes that transition).
+export async function getMyAwaitingNotes(doctorId) {
+  const appointments = await prisma.appointment.findMany({
+    where: { doctorId, status: 'CONFIRMED', startsAt: { lt: new Date() } },
+    include: { patient: { include: { user: { select: { fullName: true } } } } },
+    orderBy: { startsAt: 'desc' },
+    take: 10,
+  });
+  return appointments.map((appointment) => ({
+    id: appointment.id,
+    startsAt: appointment.startsAt,
+    patient: { fullName: appointment.patient.user.fullName },
+  }));
+}
+
+export async function getMyWorkingHoursAndLeave(doctorId) {
+  const [workingHours, leaves] = await Promise.all([
+    prisma.doctorWorkingHours.findMany({ where: { doctorId }, orderBy: [{ dayOfWeek: 'asc' }, { startMinute: 'asc' }] }),
+    prisma.doctorLeave.findMany({ where: { doctorId, endsAt: { gt: new Date() } }, orderBy: { startsAt: 'asc' } }),
+  ]);
+  return { workingHours, leaves };
 }
 
 export async function listSpecialisations() {

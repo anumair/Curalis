@@ -9,6 +9,7 @@ import {
   createDoctorSchema,
   updateDoctorSchema,
   workingHoursSchema,
+  myScheduleQuerySchema,
 } from './doctors.schema.js';
 import * as doctorsController from './doctors.controller.js';
 
@@ -25,6 +26,31 @@ doctorsPublicRouter.get(
   asyncHandler(doctorsController.getDoctorById)
 );
 doctorsPublicRouter.get('/specialisations', asyncHandler(doctorsController.listSpecialisations));
+
+// A doctor's own schedule/working-hours reads — separate from the public
+// router above (auth-gated) and from the admin router below (self, not
+// admin-on-any-doctor). Per-route auth for the same shared-prefix reason
+// noted throughout this codebase.
+export const doctorsSelfRouter = Router();
+doctorsSelfRouter.get(
+  '/doctors/me/schedule',
+  requireAuth,
+  requireRole('DOCTOR'),
+  validate(myScheduleQuerySchema, 'query'),
+  asyncHandler(doctorsController.getMySchedule)
+);
+doctorsSelfRouter.get(
+  '/doctors/me/awaiting-notes',
+  requireAuth,
+  requireRole('DOCTOR'),
+  asyncHandler(doctorsController.getMyAwaitingNotes)
+);
+doctorsSelfRouter.get(
+  '/doctors/me/working-hours',
+  requireAuth,
+  requireRole('DOCTOR'),
+  asyncHandler(doctorsController.getMyWorkingHoursAndLeave)
+);
 
 // Admin-only doctor provisioning and schedule management. requireAuth/
 // requireRole are applied per-route, not via router.use() — this router

@@ -65,6 +65,10 @@ const workingHourShiftSchema = z
 // PUT replaces the doctor's entire working-hours set, so shifts on the same
 // day must not overlap — availability (step 5) walks these windows assuming
 // they're disjoint.
+export const myScheduleQuerySchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD'),
+});
+
 export const workingHoursSchema = z.array(workingHourShiftSchema).superRefine((shifts, ctx) => {
   const byDay = new Map();
   shifts.forEach((shift, index) => {

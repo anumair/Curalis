@@ -32,6 +32,21 @@ export async function listSpecialisations(req, res) {
   res.json({ specialisations });
 }
 
+export async function getMySchedule(req, res) {
+  const appointments = await doctorsService.getMySchedule(req.user.id, req.query.date);
+  res.json({ appointments });
+}
+
+export async function getMyAwaitingNotes(req, res) {
+  const appointments = await doctorsService.getMyAwaitingNotes(req.user.id);
+  res.json({ appointments });
+}
+
+export async function getMyWorkingHoursAndLeave(req, res) {
+  const result = await doctorsService.getMyWorkingHoursAndLeave(req.user.id);
+  res.json(result);
+}
+
 export async function adminCreateDoctor(req, res) {
   const { user, temporaryPassword } = await doctorsService.createDoctor(req.body);
   res.status(201).json({ user: toPublicUser(user), temporaryPassword });
