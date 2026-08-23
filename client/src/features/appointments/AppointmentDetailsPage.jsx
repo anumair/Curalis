@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { cancelAppointment, getAppointment, rescheduleAppointment } from '../../api/appointments.js';
+import { cancelAppointment, getAppointment, getPostVisitSummary, rescheduleAppointment } from '../../api/appointments.js';
 import { getAvailability } from '../../api/doctors.js';
 import { formatLongDate, formatTimeRange } from '../../lib/format.js';
 import { Card } from '../../components/ui/Card.jsx';
@@ -166,6 +166,13 @@ export function AppointmentDetailsPage() {
     queryFn: () => getAppointment(appointmentId),
   });
 
+  const isCompleted = appointment?.status === 'COMPLETED';
+  const { data: visitSummary } = useQuery({
+    queryKey: ['post-visit-summary', appointmentId],
+    queryFn: () => getPostVisitSummary(appointmentId),
+    enabled: isCompleted,
+  });
+
   const timezone = user.timezone;
   const isUpcoming = appointment?.status === 'CONFIRMED' && new Date(appointment.startsAt) > new Date();
   const isCancelled = appointment?.status.startsWith('CANCELLED_');
@@ -228,6 +235,75 @@ export function AppointmentDetailsPage() {
               <Button as={Link} to="/doctors">
                 Book another time
               </Button>
+            </div>
+          )}
+
+          {isCompleted && visitSummary?.summary?.status === 'READY' && (
+            <div style={{ marginTop: 'var(--space-8)', maxWidth: 680 }}>
+              <h2 style={{ fontSize: 'clamp(26px,3vw,36px)', marginBottom: 6 }}>Your visit summary</h2>
+              <p style={{ fontSize: 13, opacity: 0.6, marginBottom: 'var(--space-6)' }}>
+                Written in plain language from {appointment.doctor.fullName}'s notes. Prepared automatically from what was written. Not medical advice.
+              </p>
+              <p style={{ fontSize: 16, lineHeight: 1.7, textWrap: 'pretty' }}>{visitSummary.summary.payload.summary}</p>
+
+              {visitSummary.visitNote?.diagnosis && (
+                <>
+                  <h4 style={{ margin: 'var(--space-6) 0 var(--space-2)' }}>What you were diagnosed with</h4>
+                  <p style={{ fontSize: 15, margin: 0 }}>{visitSummary.visitNote.diagnosis}</p>
+                </>
+              )}
+
+              {visitSummary.summary.payload.medicationSchedule?.length > 0 && (
+                <>
+                  <h4 style={{ margin: 'var(--space-6) 0 var(--space-3)' }}>Your medication</h4>
+                  <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+                    {visitSummary.summary.payload.medicationSchedule.map((m, i) => (
+                      <Card key={i} style={{ padding: 'var(--space-4) var(--space-6)', gap: 2 }}>
+                        <p style={{ fontFamily: 'var(--font-heading)', fontSize: 17, margin: 0 }}>
+                          {m.drug} · {m.dose}
+                        </p>
+                        <p style={{ fontSize: 14, opacity: 0.8, margin: 0 }}>{m.whenToTake}</p>
+                        <p style={{ fontSize: 13, opacity: 0.65, margin: 0 }}>
+                          {m.howLong}
+                          {m.notes ? ` · ${m.notes}` : ''}
+                        </p>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {visitSummary.summary.payload.followUpSteps?.length > 0 && (
+                <>
+                  <h4 style={{ margin: 'var(--space-6) 0 var(--space-2)' }}>Next steps</h4>
+                  <ul style={{ fontSize: 15, lineHeight: 1.7, paddingLeft: 20, margin: 0 }}>
+                    {visitSummary.summary.payload.followUpSteps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {visitSummary.visitNote?.followUpDate && (
+                <div style={{ background: 'var(--color-accent-2-100)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+                  <h4 style={{ marginBottom: 4 }}>Follow-up appointment</h4>
+                  <p style={{ fontSize: 14, color: 'var(--color-accent-2-800)', marginBottom: 'var(--space-3)' }}>
+                    Recommended on or after {formatLongDate(new Date(visitSummary.visitNote.followUpDate), 'UTC')}.
+                    {visitSummary.visitNote.followUpNotes ? ` ${visitSummary.visitNote.followUpNotes}` : ''}
+                  </p>
+                  <Button as={Link} to="/doctors">
+                    Book follow-up
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {isCompleted && visitSummary && visitSummary.summary?.status !== 'READY' && (
+            <div style={{ background: 'var(--color-neutral-200)', borderRadius: 'calc(var(--radius-lg) * 1.15)', padding: 'var(--space-6)', marginTop: 'var(--space-8)', maxWidth: '56ch' }}>
+              <p style={{ margin: 0, fontSize: 15, textWrap: 'pretty' }}>
+                {appointment.doctor.fullName} has added their notes, and your summary is being prepared. You'll get an email as soon as it's ready.
+              </p>
             </div>
           )}
 

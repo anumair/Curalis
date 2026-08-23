@@ -23,3 +23,7 @@ export function cancelAppointment(id, reason) {
 export function rescheduleAppointment(id, newStartsAt) {
   return api.patch(`/appointments/${id}/reschedule`, { newStartsAt }).then((res) => res.data);
 }
+
+export function getPostVisitSummary(id) {
+  return api.get(`/appointments/${id}/post-visit-summary`).then((res) => res.data);
+}
