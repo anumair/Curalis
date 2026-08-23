@@ -25,6 +25,15 @@ function addDays(dateStr, days) {
   return d.toISOString().slice(0, 10);
 }
 
+function scheduleHeading(dateStr, timezone) {
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(new Date());
+  if (dateStr === todayStr) return "Today's schedule";
+  if (dateStr === addDays(todayStr, 1)) return "Tomorrow's schedule";
+  if (dateStr === addDays(todayStr, -1)) return "Yesterday's schedule";
+  const formatted = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${dateStr}T12:00:00Z`));
+  return `Schedule for ${formatted}`;
+}
+
 export function DoctorDashboardPage() {
   const { user } = useAuth();
   const timezone = user.timezone;
@@ -63,7 +72,7 @@ export function DoctorDashboardPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: 'var(--space-8)', alignItems: 'start' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
-            <h3 style={{ margin: 0, flex: 1 }}>Today's schedule</h3>
+            <h3 style={{ margin: 0, flex: 1 }}>{scheduleHeading(date, timezone)}</h3>
             <button type="button" className="btn btn-secondary btn-icon" onClick={() => setDate((d) => addDays(d, -1))}>
               ‹
             </button>
