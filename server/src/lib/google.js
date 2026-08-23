@@ -1,8 +1,18 @@
 import { google } from 'googleapis';
 import crypto from 'node:crypto';
 import { env } from '../config/env.js';
+import { logger } from './logger.js';
 
 export const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
+
+// getGoogleAccountEmail (right after consent, to label the connection with
+// the Google account's address) calls Google's userinfo endpoint, which
+// requires an identity scope on the token — calendar.events alone doesn't
+// authorize it. Without this, the userinfo call 401s with Google's generic
+// "missing required authentication credential" message, which reads like a
+// propagation bug but is really just an insufficient-scope token hitting an
+// endpoint it was never authorized for.
+const CONSENT_SCOPES = [...CALENDAR_SCOPES, 'https://www.googleapis.com/auth/userinfo.email'];
 
 export function createOAuth2Client() {
   return new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI);
@@ -14,17 +24,33 @@ export function getGoogleAuthUrl(state) {
     // connection dies in an hour with no way to renew (brief §14).
     access_type: 'offline',
     prompt: 'consent',
-    scope: CALENDAR_SCOPES,
+    scope: CONSENT_SCOPES,
     state,
   });
 }
 
 export async function exchangeCodeForTokens(code) {
   const { tokens } = await createOAuth2Client().getToken(code);
+  // Temporary diagnostic for the userinfo 401 investigation — confirms
+  // shape only, never the token value itself.
+  logger.info(
+    {
+      hasAccessToken: Boolean(tokens.access_token),
+      accessTokenLength: tokens.access_token?.length ?? 0,
+      tokenType: tokens.token_type,
+      hasRefreshToken: Boolean(tokens.refresh_token),
+      scope: tokens.scope,
+    },
+    'Google OAuth token exchange result'
+  );
   return tokens;
 }
 
 export async function getGoogleAccountEmail(accessToken) {
+  logger.info(
+    { hasAccessToken: Boolean(accessToken), accessTokenLength: accessToken?.length ?? 0 },
+    'Calling Google userinfo with access token'
+  );
   const client = createOAuth2Client();
   client.setCredentials({ access_token: accessToken });
   const { data } = await google.oauth2({ version: 'v2', auth: client }).userinfo.get();
