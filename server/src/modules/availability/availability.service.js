@@ -3,8 +3,8 @@ import { prisma } from '../../lib/prisma.js';
 import { ApiError } from '../../utils/errors.js';
 import { todayDateStringInZone, addDaysToDateString, dayOfWeekOfDateString, minutesToTimeString } from '../../utils/time.js';
 
-async function loadDoctorOrThrow(doctorId) {
-  const doctor = await prisma.doctorProfile.findUnique({
+async function loadDoctorOrThrow(client, doctorId) {
+  const doctor = await client.doctorProfile.findUnique({
     where: { userId: doctorId },
     include: { user: { select: { timezone: true } } },
   });
@@ -38,8 +38,13 @@ function rangesOverlap(aStart, aEnd, bStart, bEnd) {
 // hours minus leave minus existing bookings. Expired HELD rows are
 // excluded by the query itself (holdExpiresAt > now), so correctness here
 // never depends on the hold-sweeper job having run.
-export async function getAvailability(doctorId, date) {
-  const doctor = await loadDoctorOrThrow(doctorId);
+//
+// `client` defaults to the plain Prisma singleton but accepts a `tx` from
+// an in-progress transaction — leave.service.js uses this so its "next
+// available slot" lookup sees the leave row it just inserted, without
+// waiting for that transaction to commit first.
+export async function getAvailability(doctorId, date, client = prisma) {
+  const doctor = await loadDoctorOrThrow(client, doctorId);
   assertDateWithinBookingWindow(date, doctor);
 
   const { user, slotDurationMin, minLeadTimeMin } = doctor;
@@ -49,11 +54,11 @@ export async function getAvailability(doctorId, date) {
   const dayEndUtc = fromZonedTime(`${nextDate}T00:00:00`, user.timezone);
 
   const [workingHours, leaves, blockingAppointments] = await Promise.all([
-    prisma.doctorWorkingHours.findMany({ where: { doctorId, dayOfWeek }, orderBy: { startMinute: 'asc' } }),
-    prisma.doctorLeave.findMany({
+    client.doctorWorkingHours.findMany({ where: { doctorId, dayOfWeek }, orderBy: { startMinute: 'asc' } }),
+    client.doctorLeave.findMany({
       where: { doctorId, startsAt: { lt: dayEndUtc }, endsAt: { gt: dayStartUtc } },
     }),
-    prisma.appointment.findMany({
+    client.appointment.findMany({
       where: {
         doctorId,
         startsAt: { lt: dayEndUtc },

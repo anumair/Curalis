@@ -21,6 +21,14 @@ const TEMPLATES = {
        <strong>${new Date(payload.startsAt).toUTCString()}</strong>.</p>
     <p>— City Health Clinic</p>
   `,
+  leave_cancellation: (payload) => `
+    <p>Hi ${payload.recipientName ?? ''},</p>
+    <p>${payload.patientLabel}'s appointment with ${payload.doctorName} scheduled for
+       <strong>${new Date(payload.startsAt).toUTCString()}</strong> has been cancelled because the doctor
+       is unavailable.</p>
+    ${payload.rescheduleUrl ? `<p><a href="${payload.rescheduleUrl}">Click here to find a new time</a>.</p>` : ''}
+    <p>— City Health Clinic</p>
+  `,
 };
 
 export function renderTemplate(templateKey, payload) {
