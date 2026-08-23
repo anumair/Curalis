@@ -6,9 +6,11 @@ build/
 *.log
 .DS_Store
 
-# Spec docs (locked brief, schema companion, migration SQL) — kept local,
-# not in version control.
+# Spec docs (locked brief, schema companion, migration SQL) and the raw
+# design-tool export used to build the frontend — reference material, not
+# application code. Kept local, not in version control.
 docs/
+design/
 
 # Prisma
 server/prisma/dev.db
