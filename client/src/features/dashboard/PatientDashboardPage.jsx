@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -9,6 +10,9 @@ import { todaysDoses } from '../../lib/medication.js';
 import { Card } from '../../components/ui/Card.jsx';
 import { Tag } from '../../components/ui/Tag.jsx';
 import { Button } from '../../components/ui/Button.jsx';
+import { SegmentedControl } from '../../components/ui/SegmentedControl.jsx';
+
+const FILTERS = ['All', 'Upcoming', 'Completed', 'Cancelled'];
 
 function AppointmentRow({ appointment, timezone, tone }) {
   const startsAt = new Date(appointment.startsAt);
@@ -44,6 +48,7 @@ export function PatientDashboardPage() {
   const { user } = useAuth();
   const firstName = user.fullName.split(' ')[0];
   const timezone = user.timezone;
+  const [filter, setFilter] = useState('All');
 
   const upcomingQuery = useQuery({ queryKey: ['appointments', 'upcoming'], queryFn: () => listAppointments('upcoming') });
   const pastQuery = useQuery({ queryKey: ['appointments', 'past'], queryFn: () => listAppointments('past') });
@@ -52,8 +57,16 @@ export function PatientDashboardPage() {
 
   const upcoming = upcomingQuery.data ?? [];
   const past = pastQuery.data ?? [];
+  const completed = past.filter((a) => a.status === 'COMPLETED');
+  const cancelled = past.filter((a) => a.status.startsWith('CANCELLED_'));
   const nextAppointment = upcoming[0];
   const doses = prescriptionsQuery.data ? todaysDoses(prescriptionsQuery.data, timezone) : [];
+
+  const showUpcoming = filter === 'All' || filter === 'Upcoming';
+  const showCompleted = filter === 'All' || filter === 'Completed';
+  const showCancelled = filter === 'All' || filter === 'Cancelled';
+  const nothingToShow =
+    (!showUpcoming || upcoming.length === 0) && (!showCompleted || completed.length === 0) && (!showCancelled || cancelled.length === 0);
 
   return (
     <div className="pg" style={{ maxWidth: 1180, margin: '0 auto', padding: 'clamp(28px,4vw,52px) clamp(16px,4vw,28px) 96px' }}>
@@ -95,17 +108,40 @@ export function PatientDashboardPage() {
           )}
 
           <h6 style={{ opacity: 0.6, margin: 'var(--space-8) 0 var(--space-3)' }}>Your appointments</h6>
+          <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} name="apptfilter" style={{ marginBottom: 'var(--space-4)' }} />
 
-          {upcoming.length > 1 && <p style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.5, marginBottom: 'var(--space-2)' }}>Upcoming</p>}
-          {upcoming.slice(1).map((appointment) => (
-            <AppointmentRow key={appointment.id} appointment={appointment} timezone={timezone} tone="upcoming" />
-          ))}
+          {showUpcoming && upcoming.length > 0 && (
+            <>
+              {filter === 'All' && <p style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.5, marginBottom: 'var(--space-2)' }}>Upcoming</p>}
+              {upcoming.map((appointment) => (
+                <AppointmentRow key={appointment.id} appointment={appointment} timezone={timezone} tone="upcoming" />
+              ))}
+            </>
+          )}
 
-          {past.length > 0 && <p style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.5, margin: 'var(--space-6) 0 var(--space-2)' }}>Past</p>}
-          {past.map((appointment) => (
-            <AppointmentRow key={appointment.id} appointment={appointment} timezone={timezone} tone="past" />
-          ))}
-          {past.length === 0 && upcoming.length <= 1 && <p style={{ opacity: 0.6, fontSize: 14 }}>Your completed visits will appear here.</p>}
+          {showCompleted && completed.length > 0 && (
+            <>
+              {filter === 'All' && <p style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.5, margin: 'var(--space-6) 0 var(--space-2)' }}>Completed</p>}
+              {completed.map((appointment) => (
+                <AppointmentRow key={appointment.id} appointment={appointment} timezone={timezone} tone="past" />
+              ))}
+            </>
+          )}
+
+          {showCancelled && cancelled.length > 0 && (
+            <>
+              {filter === 'All' && <p style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '.08em', opacity: 0.5, margin: 'var(--space-6) 0 var(--space-2)' }}>Cancelled</p>}
+              {cancelled.map((appointment) => (
+                <AppointmentRow key={appointment.id} appointment={appointment} timezone={timezone} tone="past" />
+              ))}
+            </>
+          )}
+
+          {nothingToShow && (
+            <p style={{ opacity: 0.6, fontSize: 14 }}>
+              {filter === 'All' ? 'Your appointments will appear here.' : `No ${filter.toLowerCase()} appointments.`}
+            </p>
+          )}
         </div>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
