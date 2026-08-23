@@ -145,11 +145,19 @@ export async function submitPrescription(doctorId, appointmentId, body) {
 }
 
 export async function listMyPrescriptions(patientId) {
-  return prisma.prescription.findMany({
+  const prescriptions = await prisma.prescription.findMany({
     where: { patientId },
-    include: { items: true },
+    include: {
+      items: true,
+      appointment: { include: { doctor: { include: { user: { select: { fullName: true } } } } } },
+    },
     orderBy: { createdAt: 'desc' },
   });
+
+  return prescriptions.map(({ appointment, ...prescription }) => ({
+    ...prescription,
+    doctor: { fullName: appointment.doctor.user.fullName, specialisation: appointment.doctor.specialisation },
+  }));
 }
 
 export async function updateReminderPreferences(patientId, medicationRemindersEnabled) {

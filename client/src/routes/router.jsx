@@ -8,6 +8,7 @@ import { PatientDashboardPage } from '@/features/dashboard/PatientDashboardPage.
 import { AppointmentDetailsPage } from '@/features/appointments/AppointmentDetailsPage.jsx';
 import { FindDoctorPage } from '@/features/doctors/FindDoctorPage.jsx';
 import { BookAppointmentPage } from '@/features/booking/BookAppointmentPage.jsx';
+import { PrescriptionsPage } from '@/features/prescriptions/PrescriptionsPage.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import { ComingSoon } from './ComingSoon.jsx';
 
@@ -36,7 +37,7 @@ export const router = createBrowserRouter([
               { path: '/doctors', element: <FindDoctorPage /> },
               { path: '/book/:doctorId', element: <BookAppointmentPage /> },
               { path: '/appointments/:appointmentId', element: <AppointmentDetailsPage /> },
-              { path: '/prescriptions', element: <ComingSoon label="Prescriptions" /> },
+              { path: '/prescriptions', element: <PrescriptionsPage /> },
             ],
           },
 
