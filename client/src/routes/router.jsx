@@ -6,6 +6,8 @@ import { SignUpPage } from '@/features/auth/SignUpPage.jsx';
 import { AppShell } from '@/components/layout/AppShell.jsx';
 import { PatientDashboardPage } from '@/features/dashboard/PatientDashboardPage.jsx';
 import { AppointmentDetailsPage } from '@/features/appointments/AppointmentDetailsPage.jsx';
+import { FindDoctorPage } from '@/features/doctors/FindDoctorPage.jsx';
+import { BookAppointmentPage } from '@/features/booking/BookAppointmentPage.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
 import { ComingSoon } from './ComingSoon.jsx';
 
@@ -31,8 +33,8 @@ export const router = createBrowserRouter([
             element: <ProtectedRoute roles={['PATIENT']} />,
             children: [
               { path: '/app', element: <PatientDashboardPage /> },
-              { path: '/doctors', element: <ComingSoon label="Find a doctor" /> },
-              { path: '/book/:doctorId', element: <ComingSoon label="Book an appointment" /> },
+              { path: '/doctors', element: <FindDoctorPage /> },
+              { path: '/book/:doctorId', element: <BookAppointmentPage /> },
               { path: '/appointments/:appointmentId', element: <AppointmentDetailsPage /> },
               { path: '/prescriptions', element: <ComingSoon label="Prescriptions" /> },
             ],
