@@ -8,11 +8,24 @@ import * as appointmentsController from './appointments.controller.js';
 
 export const appointmentsRouter = Router();
 
-appointmentsRouter.use(requireAuth, requireRole('PATIENT'));
-
-appointmentsRouter.post('/appointments/hold', validate(holdAppointmentSchema), asyncHandler(appointmentsController.hold));
+// requireAuth/requireRole are applied per-route, not via router.use() —
+// this router is mounted at the shared '/api' prefix (alongside doctors
+// and availability), and a blanket .use() here would match ANY '/api/*'
+// path, not just '/appointments/*', silently gating unrelated routers
+// registered after this one (e.g. it rejected admin requests to
+// /api/admin/notifications/failed with a PATIENT-only 403 before they
+// ever reached the notifications router).
+appointmentsRouter.post(
+  '/appointments/hold',
+  requireAuth,
+  requireRole('PATIENT'),
+  validate(holdAppointmentSchema),
+  asyncHandler(appointmentsController.hold)
+);
 appointmentsRouter.post(
   '/appointments/:id/confirm',
+  requireAuth,
+  requireRole('PATIENT'),
   validate(appointmentIdParamSchema, 'params'),
   validate(confirmAppointmentSchema),
   asyncHandler(appointmentsController.confirm)

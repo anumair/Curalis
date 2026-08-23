@@ -154,7 +154,7 @@ function bookingConfirmationOutboxRow({ recipient, appointmentId, doctorName, pa
     appointmentId,
     subject: `Appointment confirmed — ${doctorName}`,
     template: 'booking_confirmation',
-    payload: { appointmentId, doctorName, patientName, startsAt: startsAtIso },
+    payload: { appointmentId, recipientName: recipient.fullName, doctorName, patientName, startsAt: startsAtIso },
     idempotencyKey: `booking_confirmation:${appointmentId}:${recipient.id}`,
   };
 }

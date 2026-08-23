@@ -10,6 +10,7 @@ import authRoutes from './modules/auth/auth.routes.js';
 import { doctorsPublicRouter, doctorsAdminRouter } from './modules/doctors/doctors.routes.js';
 import { availabilityRouter } from './modules/availability/availability.routes.js';
 import { appointmentsRouter } from './modules/appointments/appointments.routes.js';
+import { notificationsAdminRouter } from './modules/notifications/notifications.routes.js';
 
 export const app = express();
 
@@ -28,9 +29,10 @@ app.use('/api', doctorsPublicRouter);
 app.use('/api/admin', doctorsAdminRouter);
 app.use('/api', availabilityRouter);
 app.use('/api', appointmentsRouter);
+app.use('/api/admin', notificationsAdminRouter);
 
 // Remaining module routers are mounted here as each one is built
-// (leave, clinical, ai, notifications, calendar).
+// (leave, clinical, ai, calendar).
 
 app.use(notFoundHandler);
 app.use(errorHandler);

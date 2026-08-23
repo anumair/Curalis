@@ -26,18 +26,34 @@ doctorsPublicRouter.get(
 );
 doctorsPublicRouter.get('/specialisations', asyncHandler(doctorsController.listSpecialisations));
 
-// Admin-only doctor provisioning and schedule management.
+// Admin-only doctor provisioning and schedule management. requireAuth/
+// requireRole are applied per-route, not via router.use() — this router
+// shares the '/api/admin' prefix with other admin routers, and a blanket
+// .use() would run for every path under that prefix regardless of which
+// router actually owns the route (harmless today since every admin
+// router happens to require the same role, but fragile — see
+// appointments.routes.js for a case where the same pattern caused a real
+// cross-router 403).
 export const doctorsAdminRouter = Router();
-doctorsAdminRouter.use(requireAuth, requireRole('ADMIN'));
-doctorsAdminRouter.post('/doctors', validate(createDoctorSchema), asyncHandler(doctorsController.adminCreateDoctor));
+doctorsAdminRouter.post(
+  '/doctors',
+  requireAuth,
+  requireRole('ADMIN'),
+  validate(createDoctorSchema),
+  asyncHandler(doctorsController.adminCreateDoctor)
+);
 doctorsAdminRouter.patch(
   '/doctors/:id',
+  requireAuth,
+  requireRole('ADMIN'),
   validate(doctorIdParamSchema, 'params'),
   validate(updateDoctorSchema),
   asyncHandler(doctorsController.adminUpdateDoctor)
 );
 doctorsAdminRouter.put(
   '/doctors/:id/working-hours',
+  requireAuth,
+  requireRole('ADMIN'),
   validate(doctorIdParamSchema, 'params'),
   validate(workingHoursSchema),
   asyncHandler(doctorsController.adminSetWorkingHours)
