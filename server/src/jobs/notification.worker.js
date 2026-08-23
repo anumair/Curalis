@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { sendEmail } from '../lib/mailer.js';
 import { renderTemplate } from '../lib/emailTemplates.js';
+import { buildBookingIcs } from '../lib/ics.js';
 
 const BATCH_SIZE = 20;
 const POLL_INTERVAL_MS = 15_000;
@@ -59,7 +60,23 @@ async function processRow(row) {
     }
 
     const html = renderTemplate(row.template, row.payload);
-    const providerMessageId = await sendEmail({ to: row.recipient_email, subject: row.subject, html });
+
+    // Every booking confirmation carries an .ics attachment — brief §14:
+    // "build this, it is not optional." Works in any calendar app with no
+    // OAuth; Google Calendar sync is the upgrade for connected users.
+    let attachments;
+    if (row.type === 'BOOKING_CONFIRMATION') {
+      const ics = buildBookingIcs({
+        uid: row.appointment_id,
+        startsAt: row.payload.startsAt,
+        endsAt: row.payload.endsAt,
+        doctorName: row.payload.doctorName,
+        patientName: row.payload.patientName,
+      });
+      attachments = [{ filename: 'appointment.ics', content: ics, contentType: 'text/calendar' }];
+    }
+
+    const providerMessageId = await sendEmail({ to: row.recipient_email, subject: row.subject, html, attachments });
 
     await prisma.notificationOutbox.update({
       where: { id: row.id },

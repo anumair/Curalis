@@ -9,3 +9,8 @@ export const FREQUENCY_TIMES = {
   HS: [1320], // 22:00
   SOS: [], // as needed — no scheduled reminders
 };
+
+// Brief §14 calls for a static clinic address in synced calendar events —
+// no env var or admin setting exists for this, so it's a constant here
+// until (if ever) that becomes configurable.
+export const CLINIC_ADDRESS = 'City Health Clinic, 123 Main Street';

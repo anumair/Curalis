@@ -4,6 +4,7 @@ import { boss, ensureQueues } from './lib/boss.js';
 import { startNotificationWorker } from './jobs/notification.worker.js';
 import { startAiWorker } from './jobs/ai.worker.js';
 import { startMedicationWorker } from './jobs/medication.worker.js';
+import { startCalendarWorker } from './jobs/calendar.worker.js';
 import './lib/prisma.js';
 
 // Jobs are registered here as each one is built, per the brief's build order:
@@ -17,6 +18,7 @@ async function start() {
   startNotificationWorker();
   startAiWorker();
   startMedicationWorker();
+  startCalendarWorker();
   logger.info(`Worker started (${env.NODE_ENV})`);
 }
 

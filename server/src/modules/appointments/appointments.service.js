@@ -147,7 +147,7 @@ export async function holdSlot(patientId, { doctorId, startsAt: startsAtIso }) {
 // applied here as a general policy for anything that could leak into an
 // inbox or a shared calendar). Shared shape for booking/cancel/reschedule
 // notifications; only the type/subject/template/idempotency prefix differ.
-function notificationOutboxRow({ type, template, subjectPrefix, idempotencyPrefix, recipient, appointmentId, doctorName, patientName, startsAtIso }) {
+function notificationOutboxRow({ type, template, subjectPrefix, idempotencyPrefix, recipient, appointmentId, doctorName, patientName, startsAtIso, endsAtIso }) {
   return {
     type,
     recipientUserId: recipient.id,
@@ -155,7 +155,10 @@ function notificationOutboxRow({ type, template, subjectPrefix, idempotencyPrefi
     appointmentId,
     subject: `${subjectPrefix} — ${doctorName}`,
     template,
-    payload: { appointmentId, recipientName: recipient.fullName, doctorName, patientName, startsAt: startsAtIso },
+    // endsAt is only needed for booking confirmations (the .ics
+    // attachment needs a real end time), but harmless to include
+    // everywhere the caller has it on hand.
+    payload: { appointmentId, recipientName: recipient.fullName, doctorName, patientName, startsAt: startsAtIso, endsAt: endsAtIso },
     idempotencyKey: `${idempotencyPrefix}:${appointmentId}:${recipient.id}`,
   };
 }
@@ -243,6 +246,7 @@ export async function confirmAppointment(patientId, appointmentId, { holdToken, 
     ]);
 
     const startsAtIso = new Date(appointment.starts_at).toISOString();
+    const endsAtIso = new Date(appointment.ends_at).toISOString();
     await tx.notificationOutbox.createMany({
       data: [
         bookingConfirmationOutboxRow({
@@ -251,6 +255,7 @@ export async function confirmAppointment(patientId, appointmentId, { holdToken, 
           doctorName: doctor.fullName,
           patientName: patient.fullName,
           startsAtIso,
+          endsAtIso,
         }),
         bookingConfirmationOutboxRow({
           recipient: doctor,
@@ -258,6 +263,7 @@ export async function confirmAppointment(patientId, appointmentId, { holdToken, 
           doctorName: doctor.fullName,
           patientName: patient.fullName,
           startsAtIso,
+          endsAtIso,
         }),
       ],
     });

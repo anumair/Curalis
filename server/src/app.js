@@ -14,6 +14,7 @@ import { notificationsAdminRouter } from './modules/notifications/notifications.
 import { aiRouter } from './modules/ai/ai.routes.js';
 import { clinicalRouter } from './modules/clinical/clinical.routes.js';
 import { leaveAdminRouter } from './modules/leave/leave.routes.js';
+import { calendarRouter } from './modules/calendar/calendar.routes.js';
 
 export const app = express();
 
@@ -36,8 +37,7 @@ app.use('/api/admin', notificationsAdminRouter);
 app.use('/api', aiRouter);
 app.use('/api', clinicalRouter);
 app.use('/api/admin', leaveAdminRouter);
-
-// Remaining module routers are mounted here as each one is built (calendar).
+app.use('/api', calendarRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

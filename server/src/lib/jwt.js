@@ -34,3 +34,20 @@ export function verifyRefreshToken(token) {
 export function hashRefreshToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
+
+// Carries the initiating user's id through Google's OAuth round-trip via
+// the `state` parameter. The callback is a raw browser redirect FROM
+// Google — there's no Authorization header to read there, so this is the
+// only tamper-proof way to know who a given /callback hit belongs to.
+// Short-lived: the whole consent flow should take well under 10 minutes.
+export function signCalendarStateToken(userId) {
+  return jwt.sign({ sub: userId, purpose: 'calendar_state' }, env.JWT_ACCESS_SECRET, { expiresIn: '10m' });
+}
+
+export function verifyCalendarStateToken(token) {
+  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET, { algorithms: ['HS256'] });
+  if (payload.purpose !== 'calendar_state') {
+    throw new Error('Invalid state token purpose');
+  }
+  return payload.sub;
+}
