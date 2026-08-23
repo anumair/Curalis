@@ -40,6 +40,20 @@ export function dayOfWeekOfDateString(dateString) {
   return new Date(`${dateString}T00:00:00Z`).getUTCDay();
 }
 
+// Quiet hours wrap midnight (e.g. 22 -> 7), so "inside" means hour >=
+// start OR hour < end when start > end. The boundary hour itself counts
+// as quiet (hour >= start, not >), a deliberate, conservative reading —
+// worth knowing that this makes the default HS ("at bedtime") frequency
+// time of 22:00 collide exactly with the default quiet-hour start, so an
+// HS reminder never actually fires under the shipped defaults.
+export function isMinuteInQuietHours(minuteOfDay, quietStartHour, quietEndHour) {
+  const hour = Math.floor(minuteOfDay / 60);
+  if (quietStartHour > quietEndHour) {
+    return hour >= quietStartHour || hour < quietEndHour;
+  }
+  return hour >= quietStartHour && hour < quietEndHour;
+}
+
 export function minutesToTimeString(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60).toString().padStart(2, '0');
   const minutes = (totalMinutes % 60).toString().padStart(2, '0');

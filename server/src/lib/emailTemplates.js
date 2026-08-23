@@ -29,6 +29,12 @@ const TEMPLATES = {
     ${payload.rescheduleUrl ? `<p><a href="${payload.rescheduleUrl}">Click here to find a new time</a>.</p>` : ''}
     <p>— City Health Clinic</p>
   `,
+  medication_reminder: (payload) => `
+    <p>Hi ${payload.recipientName ?? ''},</p>
+    <p>Time to take: <strong>${payload.drugName} ${payload.dose}</strong>.</p>
+    ${payload.instructions ? `<p>${payload.instructions}</p>` : ''}
+    <p>— City Health Clinic</p>
+  `,
 };
 
 export function renderTemplate(templateKey, payload) {
