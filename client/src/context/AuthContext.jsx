@@ -37,6 +37,14 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  // Lets a page that just changed the user's own profile (Settings) push
+  // the new values into the shared context without a full page reload.
+  const refreshUser = useCallback(async () => {
+    const data = await authApi.getMe();
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -48,7 +56,7 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  return <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, isLoading, login, register, logout, refreshUser }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

@@ -14,8 +14,8 @@ import { ConsultationPage } from '@/features/doctor/ConsultationPage.jsx';
 import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage.jsx';
 import { AddManageDoctorPage } from '@/features/admin/AddManageDoctorPage.jsx';
 import { NotificationLogPage } from '@/features/admin/NotificationLogPage.jsx';
+import { SettingsPage } from '@/features/settings/SettingsPage.jsx';
 import { ProtectedRoute } from './ProtectedRoute.jsx';
-import { ComingSoon } from './ComingSoon.jsx';
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
@@ -32,7 +32,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { path: '/settings', element: <ComingSoon label="Account settings" /> },
+          { path: '/settings', element: <SettingsPage /> },
 
           // Patient
           {
