@@ -5,6 +5,16 @@ symptoms up front, and get a plain-language summary and medication reminders aft
 visit. Doctors get an AI-prepared brief before each consultation. Admins manage doctors,
 working hours, leave, and notification delivery.
 
+## Live deployment
+
+- **App**: [curalis-beta.vercel.app](https://curalis-beta.vercel.app)
+- **API**: [curalis-production.up.railway.app](https://curalis-production.up.railway.app)
+- **API docs**: [curalis-production.up.railway.app/api-docs](https://curalis-production.up.railway.app/api-docs)
+
+Frontend on Vercel; API and background worker as two separate services on Railway,
+sharing a Neon Postgres instance. See [Sign in](https://curalis-beta.vercel.app/sign-in)
+for one-click demo accounts (doctor, patient, admin).
+
 ## Stack
 
 - **Client**: React 18, Vite, plain CSS (no Tailwind), React Router v7, TanStack Query,
