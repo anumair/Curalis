@@ -17,6 +17,7 @@ const HOME_ROUTE_BY_ROLE = { DOCTOR: '/doctor', ADMIN: '/admin', PATIENT: '/app'
 const DEMO_ACCOUNTS = {
   doctor: { email: 'dr.mehta@clinic.test', password: 'Password@123', label: 'Doctor sign-in (Dr. Rohan Mehta, Dermatology)' },
   admin: { email: 'admin@gmail.com', password: 'admin1234', label: 'Admin sign-in' },
+  patient: { email: 'firstpatient@gmail.com', password: 'firstpatient123', label: 'Patient sign-in' },
 };
 
 export function SignInPage() {
@@ -107,6 +108,14 @@ export function SignInPage() {
             disabled={demoLoading !== null}
           >
             {demoLoading === 'admin' ? 'Signing in…' : 'Admin sign-in'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => handleDemoSignIn('patient')}
+            disabled={demoLoading !== null}
+          >
+            {demoLoading === 'patient' ? 'Signing in…' : 'Patient sign-in'}
           </Button>
         </div>
       </div>
