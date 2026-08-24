@@ -14,21 +14,27 @@ const schema = z.object({
 
 const HOME_ROUTE_BY_ROLE = { DOCTOR: '/doctor', ADMIN: '/admin', PATIENT: '/app' };
 
+const DEMO_ACCOUNTS = {
+  doctor: { email: 'dr.mehta@clinic.test', password: 'Password@123', label: 'Doctor sign-in (Dr. Rohan Mehta, Dermatology)' },
+  admin: { email: 'admin@gmail.com', password: 'admin1234', label: 'Admin sign-in' },
+};
+
 export function SignInPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [demoLoading, setDemoLoading] = useState(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({ resolver: zodResolver(schema) });
 
-  async function onSubmit(values) {
+  async function signInWith(email, password) {
     setAuthError('');
     try {
-      const user = await login(values.email, values.password);
+      const user = await login(email, password);
       navigate(HOME_ROUTE_BY_ROLE[user.role] ?? '/app');
     } catch (err) {
       const code = err.response?.data?.error?.code;
@@ -38,6 +44,17 @@ export function SignInPage() {
           : 'Something went wrong signing you in. Please try again.'
       );
     }
+  }
+
+  async function onSubmit(values) {
+    await signInWith(values.email, values.password);
+  }
+
+  async function handleDemoSignIn(kind) {
+    setDemoLoading(kind);
+    const { email, password } = DEMO_ACCOUNTS[kind];
+    await signInWith(email, password);
+    setDemoLoading(null);
   }
 
   return (
@@ -71,6 +88,28 @@ export function SignInPage() {
       <p style={{ fontSize: 14, marginTop: 'var(--space-4)' }}>
         New patient? <Link to="/sign-up">Create an account</Link>
       </p>
+
+      <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-5)', borderTop: '1px solid var(--color-divider)' }}>
+        <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 'var(--space-3)' }}>For Demo:</p>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => handleDemoSignIn('doctor')}
+            disabled={demoLoading !== null}
+          >
+            {demoLoading === 'doctor' ? 'Signing in…' : 'Doctor sign-in'}
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => handleDemoSignIn('admin')}
+            disabled={demoLoading !== null}
+          >
+            {demoLoading === 'admin' ? 'Signing in…' : 'Admin sign-in'}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
