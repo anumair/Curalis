@@ -10,7 +10,12 @@ import './lib/prisma.js';
 async function start() {
   await boss.start();
   await ensureQueues();
-  app.listen(env.PORT, () => {
+  // Binding the host explicitly matters here: Node's default (no host arg)
+  // can end up on an interface a platform's edge proxy can't actually
+  // reach, even though listen() reports success and the process looks
+  // perfectly healthy — 0.0.0.0 is what makes it reachable from outside
+  // the container.
+  app.listen(env.PORT, '0.0.0.0', () => {
     logger.info(`API listening on ${env.API_BASE_URL}`);
   });
 }
