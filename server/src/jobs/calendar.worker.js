@@ -22,16 +22,26 @@ function buildEventBody({ appointment, isDoctor, doctorName, patientName }) {
   };
 }
 
-function isInvalidGrant(err) {
+export function isInvalidGrant(err) {
   return err?.response?.data?.error === 'invalid_grant' || String(err?.message).includes('invalid_grant');
 }
 
-async function markConnectionRevoked(userId, err) {
+// A connection made before this app requested calendar.events (or one
+// where the user declined it at the consent screen) authenticates fine but
+// 403s on every actual calendar call — googleapis surfaces this as
+// reason: 'insufficientPermissions' with status 403, distinct from a rate
+// limit 403 (reason 'rateLimitExceeded'/'userRateLimitExceeded'). Retrying
+// this can never succeed without the user re-granting a broader scope, so
+// like invalid_grant it's terminal, not a transient failure to back off on.
+export function isInsufficientScope(err) {
+  const reason = err?.errors?.[0]?.reason ?? err?.response?.data?.error?.errors?.[0]?.reason;
+  return err?.code === 403 && reason === 'insufficientPermissions';
+}
+
+async function markConnectionRevoked(userId, message) {
   // Best-effort — the connection row may already be gone (e.g. the user
   // disconnected in between); that's fine, there's nothing left to mark.
-  await prisma.calendarConnection
-    .update({ where: { userId }, data: { revokedAt: new Date(), lastError: err?.message ?? 'invalid_grant' } })
-    .catch(() => {});
+  await prisma.calendarConnection.update({ where: { userId }, data: { revokedAt: new Date(), lastError: message } }).catch(() => {});
 }
 
 async function syncOneEvent(event) {
@@ -103,10 +113,25 @@ async function syncOneEvent(event) {
     if (isInvalidGrant(err)) {
       // Terminal — the user revoked access from their Google Account
       // settings. Stop retrying, surface a reconnect banner instead.
-      await markConnectionRevoked(event.userId, err);
+      await markConnectionRevoked(event.userId, 'Google Calendar access was revoked.');
       await prisma.calendarEvent.update({
         where: { id: event.id },
         data: { syncStatus: 'FAILED', attempts: event.attempts + 1, lastError: 'Google Calendar access was revoked.' },
+      });
+      return;
+    }
+
+    if (isInsufficientScope(err)) {
+      // Terminal for a different reason than invalid_grant — the token is
+      // valid but was never granted calendar access. Same outcome: stop
+      // retrying (it'll never succeed on its own) and surface the same
+      // reconnect banner, since `connected` in the status API is driven
+      // off revokedAt regardless of which terminal reason set it.
+      const message = 'Google Calendar is connected without calendar permissions — reconnect and approve calendar access.';
+      await markConnectionRevoked(event.userId, message);
+      await prisma.calendarEvent.update({
+        where: { id: event.id },
+        data: { syncStatus: 'FAILED', attempts: event.attempts + 1, lastError: message },
       });
       return;
     }

@@ -1,7 +1,6 @@
 import { google } from 'googleapis';
 import crypto from 'node:crypto';
 import { env } from '../config/env.js';
-import { logger } from './logger.js';
 
 export const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
@@ -31,26 +30,10 @@ export function getGoogleAuthUrl(state) {
 
 export async function exchangeCodeForTokens(code) {
   const { tokens } = await createOAuth2Client().getToken(code);
-  // Temporary diagnostic for the userinfo 401 investigation — confirms
-  // shape only, never the token value itself.
-  logger.info(
-    {
-      hasAccessToken: Boolean(tokens.access_token),
-      accessTokenLength: tokens.access_token?.length ?? 0,
-      tokenType: tokens.token_type,
-      hasRefreshToken: Boolean(tokens.refresh_token),
-      scope: tokens.scope,
-    },
-    'Google OAuth token exchange result'
-  );
   return tokens;
 }
 
 export async function getGoogleAccountEmail(accessToken) {
-  logger.info(
-    { hasAccessToken: Boolean(accessToken), accessTokenLength: accessToken?.length ?? 0 },
-    'Calling Google userinfo with access token'
-  );
   const client = createOAuth2Client();
   client.setCredentials({ access_token: accessToken });
   const { data } = await google.oauth2({ version: 'v2', auth: client }).userinfo.get();

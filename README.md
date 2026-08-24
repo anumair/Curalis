@@ -69,6 +69,29 @@ and the rest of the core flow all work); AI summaries and calendar sync just won
 With the server running, browse the full OpenAPI reference at `http://localhost:4000/api-docs`
 (spec source: `server/openapi.json`).
 
+## Tests
+
+```bash
+cd server
+docker-compose up -d postgres   # if not already running
+npm test
+```
+
+Runs against a disposable `curalis_test` database in the same local Postgres container
+(config in `server/.env.test`, all dummy values — never the real Neon instance). Apply
+migrations to it once before the first run:
+
+```bash
+DATABASE_URL="postgresql://curalis:curalis@localhost:5432/curalis_test?schema=public" npx prisma migrate deploy
+```
+
+Covers auth (register/login/refresh rotation/reuse-detection/logout/RBAC), the booking
+lifecycle (hold/confirm/cancel/reschedule, double-booking rejection, hold expiry and the
+sweeper that reclaims it), availability (working-hours-to-UTC conversion, leave, expired
+holds), the failed-notification retry path and its atomic claim query, AI response-schema
+validation, and the Google Calendar terminal-error classification (invalid grant vs.
+insufficient scope). No test hits a real SendGrid/OpenAI/Google endpoint.
+
 ## Notes
 
 - Demo accounts and passwords are printed by `npm run seed`.

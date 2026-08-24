@@ -365,7 +365,8 @@
         },
         "responses": {
           "201": { "description": "Account created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSession" } } } },
-          "409": { "description": "Email already in use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "409": { "description": "Email already in use", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limited — too many attempts from this IP", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       }
     },
@@ -387,7 +388,8 @@
         },
         "responses": {
           "200": { "description": "Signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSession" } } } },
-          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+          "401": { "description": "Invalid credentials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Rate limited — too many attempts from this IP", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
         }
       }
     },
